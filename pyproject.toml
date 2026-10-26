@@ -1,0 +1,30 @@
+[project]
+name = "guikerong"
+version = "0.1.0"
+description = "支持专业知识补充与人工复核的企业金融匹配聊天助手"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "httpx>=0.27,<1",
+    "pydantic>=2.12,<3",
+    "uvicorn>=0.32,<1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+    "ruff>=0.11,<1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--basetemp=.pytest_cache/tmp"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

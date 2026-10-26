@@ -1,0 +1,16 @@
+.venv/
+.uv-cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+env.txt
+公司/
+outputs/
+.artifacts/
+*.log
+~$*
+data/harness.sqlite3*

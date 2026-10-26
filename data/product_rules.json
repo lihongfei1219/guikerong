@@ -1,0 +1,1834 @@
+{
+  "schema_version": "1.0",
+  "description": "基于本地CSV的初始规则草稿；未经业务复核或实时银行可用性验证。",
+  "products": {
+    "2067451066285584385": {
+      "product_name": "智企贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:da604aae1eb21eb5bbdfa337d0bdb8191d878b8697c7279e365c309c90dc7554",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "ai"
+      ],
+      "rules": {
+        "id": "2067451066285584385.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451066285584385.size",
+            "kind": "condition",
+            "operator": "in",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "小微人工智能企业",
+            "label": "属于小微企业",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "company.size_category",
+            "expected": [
+              "small",
+              "micro"
+            ]
+          },
+          {
+            "id": "2067451066285584385.technology",
+            "kind": "condition",
+            "operator": "eq",
+            "source_field": "申请条件",
+            "source_quote": "经北行认可，在人工智能等细分领域具有一定商业前景的科创型小微企业",
+            "label": "属于科创型企业",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "business.is_technology",
+            "expected": true
+          },
+          {
+            "id": "2067451066285584385.ai",
+            "kind": "condition",
+            "operator": "eq",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "小微人工智能企业",
+            "label": "属于人工智能企业",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "business.is_ai",
+            "expected": true
+          },
+          {
+            "id": "2067451066285584385.bank_assessment",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "经北行认可，在人工智能等细分领域具有一定商业前景的科创型小微企业",
+            "label": "北部湾银行认可细分领域及商业前景",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "reason_code": "BANK_CONFIRMATION_REQUIRED"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451065731936257": {
+      "product_name": "科企贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:487a2eeac55185188f353be8c249565b8829d9dbb4da897b209b6cae6b697118",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451065731936257.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451065731936257.size",
+            "kind": "condition",
+            "operator": "in",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "小微科创型企业",
+            "label": "属于小型或微型企业",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "company.size_category",
+            "expected": [
+              "small",
+              "micro"
+            ]
+          },
+          {
+            "id": "2067451065731936257.technology",
+            "kind": "condition",
+            "operator": "eq",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "小微科创型企业",
+            "label": "属于科创型企业",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "business.is_technology",
+            "expected": true
+          },
+          {
+            "id": "2067451065731936257.ip_or_talent",
+            "kind": "any",
+            "children": [
+              {
+                "id": "2067451065731936257.ip_i",
+                "kind": "condition",
+                "operator": "gte",
+                "source_field": "申请条件",
+                "source_quote": "拥有 1项以上 I类自主知识产权",
+                "label": "I类自主知识产权至少1项",
+                "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+                "field_id": "ip.class_i_count",
+                "expected": 1
+              },
+              {
+                "id": "2067451065731936257.ip_ii",
+                "kind": "condition",
+                "operator": "gte",
+                "source_field": "申请条件",
+                "source_quote": "2项以上 I I类自主知识产权",
+                "label": "II类自主知识产权至少2项",
+                "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+                "field_id": "ip.class_ii_count",
+                "expected": 2
+              },
+              {
+                "id": "2067451065731936257.talent",
+                "kind": "condition",
+                "operator": "manual",
+                "source_field": "申请条件",
+                "source_quote": "企业主/主要股东获得国家或地方政府颁发的高层次人才称号",
+                "label": "企业主/主要股东获得国家或地方政府颁发的高层次人才称号",
+                "required_material": "提供人才称号证明及该人员与申请企业的股权或企业主关系。",
+                "subject_id": "enterprise_owner_or_major_shareholder"
+              }
+            ],
+            "source_quote": "拥有 1项以上 I类自主知识产权，或 2项以上 I I类自主知识产权；企业主/主要股东获得国家或地方政府颁发的高层次人才称号；以上条件满足一项即可",
+            "source_field": "申请条件"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451075185897474": {
+      "product_name": "农银广西创新积分贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:4081985aed33e19df8cc8fa2740d0cb5c279d617213bd5ea880700a59a9e0cb6",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451075185897474.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451075185897474.enrollment",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "纳入广西创新积分制管理",
+            "label": "纳入广西创新积分制管理",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451075185897474.national_score",
+            "kind": "condition",
+            "operator": "gte",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "全国创新积分、广西创新积分均不低于60分",
+            "label": "全国创新积分不低于60分",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "innovation.national_score",
+            "expected": 60
+          },
+          {
+            "id": "2067451075185897474.guangxi_score",
+            "kind": "condition",
+            "operator": "gte",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "全国创新积分、广西创新积分均不低于60分",
+            "label": "广西创新积分不低于60分",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "innovation.guangxi_score",
+            "expected": 60
+          },
+          {
+            "id": "2067451075185897474.qualifications",
+            "kind": "any",
+            "children": [
+              {
+                "id": "2067451075185897474.high_tech",
+                "kind": "condition",
+                "operator": "eq",
+                "source_field": "产品参数_适用客户",
+                "source_quote": "国家高新技术企业",
+                "label": "国家高新技术企业",
+                "required_material": "提供申请企业的有效资质认定文件、认定主体及有效期。",
+                "field_id": "qualifications.high_tech",
+                "expected": true,
+                "require_valid_until": true
+              },
+              {
+                "id": "2067451075185897474.technology_sme",
+                "kind": "condition",
+                "operator": "eq",
+                "source_field": "产品参数_适用客户",
+                "source_quote": "科技型中小企业",
+                "label": "科技型中小企业",
+                "required_material": "提供申请企业的有效资质认定文件、认定主体及有效期。",
+                "field_id": "qualifications.technology_sme",
+                "expected": true,
+                "require_valid_until": true
+              },
+              {
+                "id": "2067451075185897474.specialized",
+                "kind": "condition",
+                "operator": "eq",
+                "source_field": "产品参数_适用客户",
+                "source_quote": "“专精特新”中小企业",
+                "label": "“专精特新”中小企业",
+                "required_material": "提供申请企业的有效资质认定文件、认定主体及有效期。",
+                "field_id": "qualifications.specialized",
+                "expected": true,
+                "require_valid_until": true
+              },
+              {
+                "id": "2067451075185897474.other_qualifications",
+                "kind": "condition",
+                "operator": "manual",
+                "source_field": "产品参数_适用客户",
+                "source_quote": "4.专精特新“小巨人”企业；5.国家技术创新示范企业；6.国家级制造业单项冠军企业；7.省级创新型中小企业。",
+                "label": "其余四类认可资质中至少一项",
+                "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+              }
+            ],
+            "source_quote": "纳入广西创新积分制管理，且全国创新积分、广西创新积分均不低于60分，具有七类科技型企业资质之一：1.国家高新技术企业；2.科技型中小企业；3.“专精特新”中小企业；4.专精特新“小巨人”企业；5.国家技术创新示范企业；6.国家级制造业单项冠军企业；7.省级创新型中小企业。",
+            "source_field": "产品参数_适用客户"
+          },
+          {
+            "id": "2067451075185897474.growth_or_new_registration",
+            "kind": "any",
+            "children": [
+              {
+                "id": "2067451075185897474.revenue_growth",
+                "kind": "condition",
+                "operator": "manual",
+                "source_field": "申请条件",
+                "source_quote": "近3年中至少1年营业收入实现增长",
+                "label": "近3年中至少1年营业收入实现增长",
+                "required_material": "提供覆盖比较期的年度营业收入及同主体同口径增长计算。"
+              },
+              {
+                "id": "2067451075185897474.new_registration",
+                "kind": "condition",
+                "operator": "manual",
+                "source_field": "申请条件",
+                "source_quote": "新注册企业除外",
+                "label": "新注册企业豁免需银行确认",
+                "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+                "reason_code": "BANK_CONFIRMATION_REQUIRED"
+              }
+            ],
+            "source_quote": "近3年中至少1年营业收入实现增长（新注册企业除外）",
+            "source_field": "申请条件"
+          },
+          {
+            "id": "2067451075185897474.additional_1",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "借款人及其法定代表人（负责人）、主要投资人、实际控制人、关键管理人员无不良信用记录，或虽然有过不良信用记录，但不良记录的产生非主观恶意且申请本次用信前已全部偿还不良信用",
+            "label": "借款人及其法定代表人（负责人）、主要投资人、实际控制人、关键管理人员无不良信用记录，或虽然有过不良信用记录，但不良记录的产生非主观恶意且申请本次用信前已全部偿还不良信用",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "subject_id": "company_and_related_persons"
+          },
+          {
+            "id": "2067451075185897474.additional_2",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "借款人及其主要股东、法定代表人、实际控制人、高管等人员未违法从事民间借贷、非法集资、涉黑涉恶、洗钱及其他非法金融活动，符合反洗钱、反恐怖融资、反扩散融资、反逃税及制裁风险管理相关规定",
+            "label": "借款人及其主要股东、法定代表人、实际控制人、高管等人员未违法从事民间借贷、非法集资、涉黑涉恶、洗钱及其他非法金融活动，符合反洗钱、反恐怖融资、反扩散融资、反逃税及制裁风险管理相关规定",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "subject_id": "company_and_related_persons"
+          },
+          {
+            "id": "2067451075185897474.additional_3",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "符合环境、社会和治理风险管理相关规定",
+            "label": "符合环境、社会和治理风险管理相关规定",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "subject_id": "company"
+          },
+          {
+            "id": "2067451075185897474.additional_4",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "借款人在农业银行开立基本账户或一般账户",
+            "label": "借款人在农业银行开立基本账户或一般账户",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "subject_id": "company"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451074795827202": {
+      "product_name": "创新积分贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:102bbd89aafc36ca9b5dd6061b28ba78d80483638ae9f62483f3436301f6e1b0",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451074795827202.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451074795827202.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "借款人申请贷款应当具备下列基本条件：1.生产经营项目符合国家产业政策，借款人生产经营良好，产品有市场，发展前景好，在同行业中有一定竞争力；借款人及法定代表人、主要股东及实际控制人未列入失信人名单，还款意愿强，无恶意欠贷欠息等不良行为；无对我行债权产生重大不利影响的债务纠纷、诉讼、民间借贷等情况",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451074795827202.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "广西各地市政府部门按照创新积分评价指标体系，对科技型中小企业、高新技术企业、创新型中小企业、专精特新企业等各类科技型企业及各地市创新积分试点企业进行分类分层分级管理，以公示名单为准。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2075719901765758978": {
+      "product_name": "科创贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:25a716bdb1dea7ede65fd65c91c573bb3de9d153df33e8922c703558873d3074",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2075719901765758978.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2075719901765758978.qualifications",
+            "kind": "any",
+            "children": [
+              {
+                "id": "2075719901765758978.specialized",
+                "kind": "condition",
+                "operator": "eq",
+                "source_field": "申请条件",
+                "source_quote": "专精特新企业",
+                "label": "专精特新企业",
+                "required_material": "提供申请企业的有效资质认定文件、认定主体及有效期。",
+                "field_id": "qualifications.specialized",
+                "expected": true,
+                "require_valid_until": true
+              },
+              {
+                "id": "2075719901765758978.high_tech",
+                "kind": "condition",
+                "operator": "eq",
+                "source_field": "申请条件",
+                "source_quote": "国家高新技术企业",
+                "label": "国家高新技术企业",
+                "required_material": "提供申请企业的有效资质认定文件、认定主体及有效期。",
+                "field_id": "qualifications.high_tech",
+                "expected": true,
+                "require_valid_until": true
+              },
+              {
+                "id": "2075719901765758978.technology_sme",
+                "kind": "condition",
+                "operator": "eq",
+                "source_field": "申请条件",
+                "source_quote": "科技型中小企业",
+                "label": "科技型中小企业",
+                "required_material": "提供申请企业的有效资质认定文件、认定主体及有效期。",
+                "field_id": "qualifications.technology_sme",
+                "expected": true,
+                "require_valid_until": true
+              },
+              {
+                "id": "2075719901765758978.other_qualifications",
+                "kind": "condition",
+                "operator": "manual",
+                "source_field": "申请条件",
+                "source_quote": "等国家部委牵头认定及重点培育的科技企业资质",
+                "label": "等国家部委牵头认定及重点培育的科技企业资质",
+                "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+              }
+            ],
+            "source_quote": "具有专精特新企业、国家高新技术企业、科技型中小企业等国家部委牵头认定及重点培育的科技企业资质",
+            "source_field": "申请条件"
+          },
+          {
+            "id": "2075719901765758978.established",
+            "kind": "condition",
+            "operator": "age_years_gte",
+            "source_field": "申请条件",
+            "source_quote": "成立年限满1年",
+            "label": "成立满1周年",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "company.established_date",
+            "expected": 1
+          },
+          {
+            "id": "2075719901765758978.compliance",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "生产经营合法合规",
+            "label": "生产经营合法合规",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2075719901765758978.credit_and_litigation",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "借款人及法定代表人/实际控制人均无不良征信记录、无大额待执行诉讼、无司法冻结",
+            "label": "借款人及法定代表人/实际控制人均无不良征信记录、无大额待执行诉讼、无司法冻结",
+            "required_material": "分别提供企业及相关责任人的征信和司法材料，由银行确认主体范围与大额口径。",
+            "subject_id": "company_and_related_persons"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2075719900528439297": {
+      "product_name": "出口闪贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:9de3cb7cbde430d9719186f1679f22a6b14cfba6cece2c1e1d70d7d9e2287d48",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "export"
+      ],
+      "rules": {
+        "id": "2075719900528439297.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2075719900528439297.size",
+            "kind": "condition",
+            "operator": "in",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "中小微出口企业",
+            "label": "属于中小微企业",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "company.size_category",
+            "expected": [
+              "small",
+              "micro",
+              "medium"
+            ]
+          },
+          {
+            "id": "2075719900528439297.export",
+            "kind": "condition",
+            "operator": "eq",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "中小微出口企业",
+            "label": "具有出口业务",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "business.has_export",
+            "expected": true
+          },
+          {
+            "id": "2075719900528439297.export_years",
+            "kind": "condition",
+            "operator": "age_years_gte",
+            "source_field": "申请条件",
+            "source_quote": "企业经营出口业务满2年",
+            "label": "经营出口业务满2周年",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "business.export_started_date",
+            "expected": 2
+          },
+          {
+            "id": "2075719900528439297.export_amount",
+            "kind": "condition",
+            "operator": "gte",
+            "source_field": "申请条件",
+            "source_quote": "企业近1年海关出口量在100万美元以上",
+            "label": "近1年海关出口金额不少于100万美元",
+            "required_material": "提供评估日前完整滚动一年的海关出口金额，币种美元且主体为申请企业。",
+            "field_id": "business.export_usd_last_year",
+            "expected": 1000000,
+            "unit": "USD",
+            "period": "rolling_year"
+          },
+          {
+            "id": "2075719900528439297.credit",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业、法定代表人或实控人征信良好",
+            "label": "企业、法定代表人或实控人征信良好",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "subject_id": "company_and_related_persons"
+          },
+          {
+            "id": "2075719900528439297.tax",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业纳税信用良好",
+            "label": "纳税信用良好（等级口径需银行确认）",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2075719900528439297.representative_age",
+            "kind": "condition",
+            "operator": "age_years_between",
+            "source_field": "申请条件",
+            "source_quote": "企业法定代表人年龄在22周岁（含）至65周岁（含）之间",
+            "label": "法定代表人年龄为22至65周岁",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "person.birth_date",
+            "expected": [
+              22,
+              65
+            ],
+            "subject_id": "legal_representative"
+          },
+          {
+            "id": "2075719900528439297.account",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业在我行开立结算账户",
+            "label": "已在招商银行开立结算账户",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2069334632061779970": {
+      "product_name": "科技e贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:1bdce0626b7d93ed1990edb13884d5c242054e45991cfb3046ea958f86d78275",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2069334632061779970.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2069334632061779970.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "经营活动正常、资信状况良好的科技型企业客群",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2069334632061779970.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "经营周转的融资产品。国家级专精特新“小巨人”企业、省级专精特新中小企业、高新技术企业、科技型中小企业、国家技术创新示范企业、制造业单项冠军等科技型企业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451067459989506": {
+      "product_name": "专精特新企业贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:699b031864cef4b45d7ba763d2e0418ee21a82c58b3fe40d26c0dce0cb4f112a",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451067459989506.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451067459989506.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "经营活动正常、资信状况良好的专精特新企业客群",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451067459989506.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "国家级专精特新“小巨人”企业、部分名单内省级专精特新企业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451075701796866": {
+      "product_name": "兴速贷（广西创新积分专属）",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:86217c4e25195d9dcee8f1d52636312cca4ddbb7e2bc8681a69d95688b22aeeb",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451075701796866.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451075701796866.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "借款企业在广西壮族自治区内完成注册登记、具有独立法人资格的小微科技型企业（符合人民银行公布的7类科技型企业标签），符合广西重点产业发展方向；借款企业广西创新积分60分及以上；符合我行线上融资模型基本准入要求。（具体产品准入要求以正式公布为准）",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451075701796866.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "符合条件的广西区内优质科技型企业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451080676241409": {
+      "product_name": "科技转化贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:f0e0e22cfcb29a83c95a99f3824b85e749924f0b0f98accece30c60bdb8def86",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451080676241409.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451080676241409.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业信用状况良好，近三年无不良信用记录，无重大责任事故或违法违规事件2.科技成果转化对象为专利、软件著作权、集成电路布图设计、创新药、设计图、配方等3.企业股权关系清晰，财务制度规范，经营持续稳健，核心管理团队稳定4.符合建设银行信用政策等其他相关规定",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451080676241409.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "高新技术企业、科技型中小企业、专精特新中小企业、专精特新“小巨人”企业等各类科技型企业或企业所属行业为科技相关产业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451083687751681": {
+      "product_name": "惠如愿•专精特新贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:cdd0990567b4defa05cb884884122077325441b9407961ddcddbf9b33dd4ff60",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451083687751681.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451083687751681.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业经营情况良好，企业及其法定代表人征信记录良好",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451083687751681.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "经过政府部门认定的各类“专精特新”企业，国家级专精特新“小巨人”企业、省级“专精特新”企业、地市级“专精特新”企业、创新型中小企业等，经过各地中小企业主管部门认定的省级“专精特新”企业。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451083293487106": {
+      "product_name": "为境外投资企业提供的融资性对外担保（内保外贷）",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:e4902f4aa0d694ecca6308f2ee6d898780abdb3a7d37b1bc43e5f23dac201e17",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "export"
+      ],
+      "rules": {
+        "id": "2067451083293487106.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451083293487106.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "具有参与基础交易的经营资格；客户资信良好，无不良记录；已有开立保函所需的授信额度或可缴纳足额保证金；业务背景真实，符合银行业务合规审查要求；业务资料完整有效",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451083293487106.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "存在境外投资企业资金不足、授信困难的问题，有海外业务发展需求的“走出去”企业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451082832113666": {
+      "product_name": "创新积分贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:9cc862b568c1db55b2d3ddb6c7c5f7556f1bae99a9191cd4339d1072306188f9",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451082832113666.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451082832113666.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "需要具备指标数据可进行测算的科技型企业。行业对标模型中科技创新维度和财务表现维度平均分位数均大于20%",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451082832113666.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "高新技术企业、科技型中小企业、“专精特新”企业以及其他具备指标数据的科技型企业。主要针对新授信客户。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451081993252865": {
+      "product_name": "跨境直贷通",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:cebbdd7d56f36e5161d14132a6d82246462f24044466c6a45d81629e91de18eb",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "export"
+      ],
+      "rules": {
+        "id": "2067451081993252865.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451081993252865.jurisdiction",
+            "kind": "condition",
+            "operator": "in",
+            "source_field": "申请条件",
+            "source_quote": "在我国境外（含我国香港、澳门和台湾地区）合法注册",
+            "label": "申请主体注册地为境外或港澳台",
+            "required_material": "提供实际借款主体注册证书；境内母公司资料不能代替境外借款主体。",
+            "field_id": "company.registration_jurisdiction",
+            "expected": [
+              "overseas",
+              "hong_kong",
+              "macao",
+              "taiwan"
+            ]
+          },
+          {
+            "id": "2067451081993252865.registration",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "合法注册",
+            "label": "申请主体在当地合法注册",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451081993252865.non_financial",
+            "kind": "condition",
+            "operator": "eq",
+            "source_field": "申请条件",
+            "source_quote": "非金融企业",
+            "label": "非金融企业",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "business.is_financial",
+            "expected": false
+          },
+          {
+            "id": "2067451081993252865.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "有境外持续经营需求的“走出去”企业、有“海外仓”共建共享经营需求的跨境电商企业、具有境外经营周转需求的对外工程承包企业等",
+            "label": "具有符合产品范围的境外经营需求",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451081397661697": {
+      "product_name": "跨境供应链融资",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:f22d93274b11c990eeec1daabc19e9af59d7627659b4e730a4dab355ad352d1d",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "export"
+      ],
+      "rules": {
+        "id": "2067451081397661697.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451081397661697.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "围绕核心企业开展生产经营的上下游链条企业",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451081397661697.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "纳入核心企业跨境供应链关系树的链条企业因开展境内外销售或采购向我行申请信贷业务。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451081003397121": {
+      "product_name": "科企订单贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:ad716600bae9bf158832b55d216239c7c5f0b92ee7764362784dd42e5497b302",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451081003397121.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451081003397121.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业应满足以下基本条件：1.企业依法经市场监督管理部门或主管部门核准登记，成立且实际经营1年（含）以上，生产经营合法、合规2.企业在建设银行开立结算账户3.企业具有持续经营能力，有合法的还款来源4.企业信用状况良好，近三年无不良信用记录，无重大责任事故或违法违规事件5.企业符合建设银行相关政策制度规定；订单买方应满足以下基本条件：1.经市场监督管理部门或主管部门核准登记，且年检合格的企事业法人，生产经营合法、合规2.生产经营正常，经营管理规范，偿债能力较强，具有到期足额支付采购货款的现金流3.与借款人建",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451081003397121.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "高新技术企业、科技型中小企业、专精特新中小企业、专精特新“小巨人”企业等各类科技型企业或企业所属行业为科技相关产业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451080013541378": {
+      "product_name": "科技易贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:e2cfcf079e25e6740baaf5eb3d1c95c0ab92e9c7b31ea3f51fcbf97f31d2000a",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451080013541378.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451080013541378.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业依法经市场监督管理部门或主管部门核准登记2.企业生产经营合法、合规，具有持续经营能力3.企业信用状况良好，无恶意逃废债、欺诈等重大不良记录4.企业成立且实际经营1年（含）以上，实际经营期限应长于贷款期限5.满足建设银行要求的其他条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451080013541378.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "高新技术企业、科技型中小企业、专精特新中小企业、专精特新“小巨人”企业等各类科技型企业或企业所属行业为科技相关产业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451079493447682": {
+      "product_name": "科技研发贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:641343a4ad863c104525964f666a28b20d1fdac3013c93fc8205ec63d03bd0f9",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451079493447682.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451079493447682.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业近三年研发费用投入占销售收入比重不低于 2%2.企业创始人或实际控制人从事本领域五年（含）以上，核心研发人员（主管级及以上）从事本领域三年（含）以上3.企业股权关系清晰，财务制度规范，经营持续稳健，核心管理团队稳定，研发管理体系完善4.企业及其控股股东、实际控制人信用状况良好，近三年无不良信用记录，无重大责任事故或违法违规事件5.申请科技研发项目贷款的，还需满足固定资产贷款的相关要求6.符合建设银行信用政策等其他相关规定",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451079493447682.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "高新技术企业、科技型中小企业、专精特新中小企业、专精特新“小巨人”企业等各类科技型企业或企业所属行业为科技相关产业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451079036268546": {
+      "product_name": "科技担保畅行贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:aca14361d63827e59e6417efd0fc7b4175e436bd0a63dd825beaf9d194ec69c6",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451079036268546.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451079036268546.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业依法经市场监督管理部门或主管部门核准登记2.企业生产经营合法、合规，具有持续经营能力3.企业在建行开立基本户或一般结算账户4.企业信用状况良好，无恶意逃废债、欺诈等重大不良记录5.企业成立且实际经营1年（含）以上，实际经营期限应长于贷款期限6.建行要求的其他条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451079036268546.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "符合条件的科技型企业或所属行业为科技相关产业的企业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451078256128002": {
+      "product_name": "短期出口信用保险保单融资",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:ab7d3a14fb2d66f1179cce9c001dbd1b452f7c2010e86ade611580e8251d2422",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "export"
+      ],
+      "rules": {
+        "id": "2067451078256128002.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451078256128002.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "持有中国出口信用保险公司短期出口信用保险综合保险的出口或走出去客户",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451078256128002.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "有出口应收账款融资或出表需求的出口或走出去客户。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451077283049474": {
+      "product_name": "出口信贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:eae3b28f719e2abb789400d9e650ca607666a937eeec4d0e92a9ffe937aeaaa5",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "export"
+      ],
+      "rules": {
+        "id": "2067451077283049474.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451077283049474.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "依法登记注册，具备业务经验与资质，经营、财务与资信状况良好；项目具备经济可行性或有明确合法还款来源；符合中国与有关国别相关各项法律法规；中信保承保融资所需险种",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451077283049474.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "中国出口企业及对外工程承包企业、境外进口企业、境外项目业主、境外政府机构或境外金融机构。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2075719890491469825": {
+      "product_name": "善科贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:ea44e810b5c661bb802ec5cc0f91d17da20e7cf89f1274341b038fa66d4d12d9",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2075719890491469825.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2075719890491469825.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业和企业主信用状况良好；成立且实际经营1年(含)以上；符合国家产业政策和建设银行信贷政策；满足以下条件之一:；(1)企业拥有与主营业务相关的自主知识产权；(2)企业主或主要股东获得国家或地方政府颁发的高层次人才称号；(3)企业获得国家或地方政府评定的优质企业资质称号；(4)企业承担国家/省/自治区/直辖市重大科技专项、首台(套)重大技术装备示范、知名高校及科研院所的科技成果转化项目；满足建设银行要求的其他条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2075719890491469825.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "具有科技成果的科技型小微企业。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2075719892055945218": {
+      "product_name": "桂科贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:8e4073512f7b36c4f2509aaf8383be50f1351bffd96d823ad3bda5d4006056a0",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2075719892055945218.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2075719892055945218.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业经广西工商行政管理机关（或主管机关）核准登记，股权结构清晰，组织架构健全，财务制度规范，有固定经营场所，经营稳定；企业符合国家产业政策、广西产业发展布局以及建设银行信贷政策，无环保违法记录，企业及其实际控制人信用记录良好；企业在建设银行开立基本户或一般结算账户；借款人应取得投资基金的投资已实际到位且未退出；企业实际控制人或其核心技术团队应从事本领域研究或生产经营 3年（含）以上；满足建设银行要求的其他条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2075719892055945218.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "适用于获得上述基金投资的高新技术企业、科技型中小企业、专精特新企业、国家技术创新示范企业、制造业单项冠军企业等科技型企业。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2075719893691723777": {
+      "product_name": "善新贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:22d4d706863e807c7e91e606f8e3f777c6c4a849d113971784fd453f8afdfb59",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2075719893691723777.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2075719893691723777.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业和企业主信用状况良好；成立且实际经营1年（含）以上；符合国家产业政策和建设银行信贷政策；拥有发明专利、实用新型、软件著作权、集成电路布图设计其中1项（含）以上且在有效期内，并在生产中应用；满足建设银行要求的其他条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2075719893691723777.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "具有专精特新中小企业（含专精特新“小巨人”）、制造业单项冠军、国家技术创新示范企业、高新技术企业、科技型中小企业、创新型中小企业科技资质认定的小微企业。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451073885663233": {
+      "product_name": "交银桂科贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:139bf2bcb60527bc5186982e26e74bed6f8d92f70caa20bc79f58a308d46eb2d",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451073885663233.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451073885663233.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "创新积分较高的科技型小微企业客户",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451073885663233.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "科技型小微企业客户",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451068575674369": {
+      "product_name": "桂盛·科创贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:99bccf059a14880f5cafd14a2b0d853df8f46d1e7139ab5a29862e3d02aaf943",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451068575674369.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451068575674369.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "依法成立并持有合法有效的营业执照/登记证书，特殊行业或按规定应取得相应许可的（如环保、食品、医药等），还应持有有权部门相应审批文件；申请申请一般流动资金贷款的，符合农合机构一般流动资金贷款业务借款人需满足的其他条件;申请可循环流动资金贷款的，符合农合机构可循环流动资金贷款业务借款人需满足的其他条件;申请申请固定资产贷款的，符合农合机构固定资产贷款业务借款人需满足的其他条件；农合机构要求的其他条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451068575674369.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "高新技术科技创新型营利法人、有经营利润且利润可依法支配的非营利法人、特别法人、非法人组织等",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451069301288962": {
+      "product_name": "桂盛·商标贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:2b9e82c04f3b3d8056cd2aa944608a99f41effbb61e2f04d986508a3ec8a9fb6",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "general_business"
+      ],
+      "rules": {
+        "id": "2067451069301288962.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451069301288962.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "有固定经营场所，持有合法有效的营业执照等相关证照，且借款人必须是商标专用权所有人；依法合规从事经营活动，在农合机构开立结算账户，借款用途符合国家产业政策；正常经营1年（含）以上，主营业务突出，收入来源稳定，资信状况良好，具有持续经营、履行合同、按期偿还贷款本息的能力；用于质押贷款的注册商标专用权需已经用于产品或服务上，已使用时间在2年（含）以上，且具备盈利能力，剩余有效期原则上不少于5年并能覆盖整个质押期",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451069301288962.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "持有合法经营的有效证照且持有《商标注册证》并依法登记的法人或非法人组织。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451070416973825": {
+      "product_name": "桂盛·专利贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:5105fab555e62c7d245e2de75c7f33b52e0b7b34048fac7a939623994440d9c7",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "general_business"
+      ],
+      "rules": {
+        "id": "2067451070416973825.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451070416973825.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "有固定经营场所，持有合法有效的营业执照等相关证照；依法合规从事经营活动，在农合机构开立结算账户，借款用途符合国家产业政策；正常经营1年（含）以上，主营业务突出，收入来源稳定，资信状况良好，具有持续经营、履行合同、按期偿还贷款本息的能力；农合机构要求的其他条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451070416973825.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "持有合法经营的有效证照且持有《专利权利书》并依法登记的法人或非法人组织。",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451082383323137": {
+      "product_name": "备货贸易融资",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:18695c29db6c474a153ac3a8a80f360c1b4b0d0206a6f0f63c6310f4979c3ef0",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "export"
+      ],
+      "rules": {
+        "id": "2067451082383323137.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451082383323137.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "符合国家产业政策、我行信贷政策的各项要求；主营业务突出，经营合法、合规，持续经营能力强，信用状态良好，具有较强的市场竞争力；海外订单真实有效",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451082383323137.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "国际贸易项下出口商",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451067065724930": {
+      "product_name": "科创e贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:9853b38498999393367e653f69c3812d5b1240d505ac20ad6cdd1adfb13e215e",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451067065724930.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451067065724930.qualification_or_score",
+            "kind": "any",
+            "children": [
+              {
+                "id": "2067451067065724930.recognized_qualification",
+                "kind": "any",
+                "children": [
+                  {
+                    "id": "2067451067065724930.high_tech",
+                    "kind": "condition",
+                    "operator": "eq",
+                    "source_field": "申请条件",
+                    "source_quote": "科技型企业资质",
+                    "label": "科技型企业资质",
+                    "required_material": "提供申请企业的有效资质认定文件、认定主体及有效期。",
+                    "field_id": "qualifications.high_tech",
+                    "expected": true,
+                    "require_valid_until": true
+                  },
+                  {
+                    "id": "2067451067065724930.technology_sme",
+                    "kind": "condition",
+                    "operator": "eq",
+                    "source_field": "申请条件",
+                    "source_quote": "科技型企业资质",
+                    "label": "科技型企业资质",
+                    "required_material": "提供申请企业的有效资质认定文件、认定主体及有效期。",
+                    "field_id": "qualifications.technology_sme",
+                    "expected": true,
+                    "require_valid_until": true
+                  },
+                  {
+                    "id": "2067451067065724930.specialized",
+                    "kind": "condition",
+                    "operator": "eq",
+                    "source_field": "申请条件",
+                    "source_quote": "科技型企业资质",
+                    "label": "科技型企业资质",
+                    "required_material": "提供申请企业的有效资质认定文件、认定主体及有效期。",
+                    "field_id": "qualifications.specialized",
+                    "expected": true,
+                    "require_valid_until": true
+                  },
+                  {
+                    "id": "2067451067065724930.other_qualification",
+                    "kind": "condition",
+                    "operator": "manual",
+                    "source_field": "申请条件",
+                    "source_quote": "科技型企业资质",
+                    "label": "其他银行认可的科技型企业资质",
+                    "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+                  }
+                ],
+                "source_quote": "",
+                "source_field": "申请条件"
+              },
+              {
+                "id": "2067451067065724930.innovation_score",
+                "kind": "any",
+                "children": [
+                  {
+                    "id": "2067451067065724930.guangxi_score",
+                    "kind": "condition",
+                    "operator": "exists",
+                    "source_field": "申请条件",
+                    "source_quote": "科技创新积分",
+                    "label": "具有广西科技创新积分",
+                    "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+                    "field_id": "innovation.guangxi_score",
+                    "expected": true
+                  },
+                  {
+                    "id": "2067451067065724930.national_score",
+                    "kind": "condition",
+                    "operator": "exists",
+                    "source_field": "申请条件",
+                    "source_quote": "科技创新积分",
+                    "label": "具有全国科技创新积分",
+                    "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+                    "field_id": "innovation.national_score",
+                    "expected": true
+                  },
+                  {
+                    "id": "2067451067065724930.other_score",
+                    "kind": "condition",
+                    "operator": "manual",
+                    "source_field": "申请条件",
+                    "source_quote": "科技创新积分",
+                    "label": "其他银行认可的科技创新积分",
+                    "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+                  }
+                ],
+                "source_quote": "",
+                "source_field": "申请条件"
+              }
+            ],
+            "source_quote": "企业应具备科技型企业资质或科技创新积分",
+            "source_field": "申请条件"
+          },
+          {
+            "id": "2067451067065724930.accepted_scope",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "企业应具备科技型企业资质或科技创新积分",
+            "label": "银行确认资质或积分属于该产品认可口径",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "reason_code": "BANK_CONFIRMATION_REQUIRED"
+          },
+          {
+            "id": "2067451067065724930.customers",
+            "kind": "condition",
+            "operator": "eq",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "科技创新企业",
+            "label": "属于科技创新企业",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。",
+            "field_id": "business.is_technology",
+            "expected": true
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451076356108289": {
+      "product_name": "专精特新贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:c7233f2cca0972491ce374f21929fa30ace611c57608f4185ca4b3ec52456400",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "technology"
+      ],
+      "rules": {
+        "id": "2067451076356108289.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451076356108289.specialized_or_cultivation",
+            "kind": "any",
+            "children": [
+              {
+                "id": "2067451076356108289.specialized",
+                "kind": "condition",
+                "operator": "eq",
+                "source_field": "申请条件",
+                "source_quote": "各级“专精特新”及培育企业名单范围内的企业",
+                "label": "各级“专精特新”及培育企业名单范围内的企业",
+                "required_material": "提供申请企业的有效资质认定文件、认定主体及有效期。",
+                "field_id": "qualifications.specialized",
+                "expected": true,
+                "require_valid_until": true
+              },
+              {
+                "id": "2067451076356108289.cultivation",
+                "kind": "condition",
+                "operator": "manual",
+                "source_field": "申请条件",
+                "source_quote": "培育企业名单范围内的企业",
+                "label": "属于正式公布的培育企业名单",
+                "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+              }
+            ],
+            "source_quote": "",
+            "source_field": "申请条件"
+          },
+          {
+            "id": "2067451076356108289.government_list",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "借款人须是在地市级（含）以上政府经信部门以正式形式公布的各级“专精特新”及培育企业名单范围内的企业",
+            "label": "地市级及以上政府经信部门正式公布且申请企业在名单内",
+            "required_material": "提供地市级及以上政府经信部门正式名单、申请企业匹配信息、发布日期和有效性。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451072958722049": {
+      "product_name": "出口信用保险项下融资",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:fa80f4845bd952eb22e925a35abf2e5e929a8748c470b2f10c5c71b493ca867a",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "export"
+      ],
+      "rules": {
+        "id": "2067451072958722049.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451072958722049.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "借款人应符合桂林银行授信要求的准入条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451072958722049.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "出口型、需短期资金周转企业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451072308604929": {
+      "product_name": "出口发票融资",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:49dcb0993e2a0241e2a1578d41e9d59926264dc7fa75471160065ab0fc24e5f2",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "export"
+      ],
+      "rules": {
+        "id": "2067451072308604929.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451072308604929.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "借款人应符合桂林银行授信要求的准入条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451072308604929.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "出口型、需短期资金周转企业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451071260028929": {
+      "product_name": "出口订单融资",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:be4a0c93833b18aa599d310cca78d9904123deb2b54dbf0b7645de311f2cbab0",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "export"
+      ],
+      "rules": {
+        "id": "2067451071260028929.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451071260028929.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "借款人应符合桂林银行授信要求的准入条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451071260028929.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "出口型、需短期资金周转企业",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    },
+    "2067451070937067521": {
+      "product_name": "桂新-融智贷",
+      "rule_version": "1.0.0-draft.1",
+      "source_record_sha256": "sha256:cd0d3e6cfde9134ae4b0a1551f6f8136a767e0766a0bade2e6644358cf397e45",
+      "rule_status": "DRAFT",
+      "availability_status": "SNAPSHOT",
+      "rule_review": null,
+      "availability_verification": null,
+      "relevance_tags": [
+        "general_business"
+      ],
+      "rules": {
+        "id": "2067451070937067521.all",
+        "kind": "all",
+        "children": [
+          {
+            "id": "2067451070937067521.application",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "申请条件",
+            "source_quote": "知识产权质押业务的借款人和出质人应当是经工商行政管理机关（或主管机关）核准登记的企业法人、其他组织或具有完全民事行为能力的自然人，借款人应符合桂林银行授信业务要求的准入条件",
+            "label": "完整申请条件待逐项核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          },
+          {
+            "id": "2067451070937067521.customers",
+            "kind": "condition",
+            "operator": "manual",
+            "source_field": "产品参数_适用客户",
+            "source_quote": "所有单位、自然人，有利于轻资产运营的借款人融资",
+            "label": "适用客户必要限制待核验",
+            "required_material": "请提供能够证明该条款的有效材料，并核对银行适用口径。"
+          }
+        ],
+        "source_quote": "",
+        "source_field": "申请条件"
+      }
+    }
+  }
+}

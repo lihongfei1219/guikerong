@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>桂科融 · 金融匹配助手</title>
+  <link rel="icon" href="/assets/favicon.svg"><link rel="stylesheet" href="/assets/chat.css">
+  <script src="/assets/chat.js" defer></script>
+</head>
+<body>
+<header><a class="brand" href="/"><b>桂</b> 桂科融 <span>金融匹配助手</span></a><nav><span id="health">连接中</span><a href="/docs">接口文档</a></nav></header>
+<div id="notice" role="status" aria-live="polite">导入企业资料，开始一段可持续的匹配对话。</div>
+<main>
+  <aside class="sidebar">
+    <div class="section-title"><h2>企业会话</h2><button id="new-session" class="quiet">＋ 新建</button></div>
+    <div id="sessions" class="session-list"></div>
+    <details id="create-panel" open><summary>创建企业会话</summary>
+      <form id="create-form"><label>企业法定全称<input id="company" required maxlength="200" placeholder="请输入申请企业全称"></label>
+      <label>选择企业资料文件夹<input id="folder-input" type="file" webkitdirectory multiple></label>
+      <p class="hint">自动包含全部子目录中的 UTF-8 Markdown（.md）文件，保留目录结构；其他类型文件会忽略。</p>
+      <details><summary>或选择多个资料文件</summary><label>企业资料文件<input id="files" type="file" accept=".md" multiple></label></details>
+      <p id="selection-summary" class="hint" role="status">尚未选择文件夹或文件。</p>
+      <details id="selected-files" hidden><summary>查看将导入的文件</summary><ul id="selected-file-list"></ul></details>
+      <label>或粘贴企业资料<textarea id="initial-doc" rows="5" placeholder="支持自由格式；请保留事实及来源"></textarea></label>
+      <p class="hint">资料与对话将保存在本机服务数据库。匹配和提问时发送到已配置的模型服务。</p>
+      <button type="submit" class="primary">创建会话</button></form>
+    </details>
+    <div class="boundary"><strong>协作流程</strong><p>上传资料 → AI 匹配 → 解释疑点 → 补充知识或材料 → 人工确认</p><p>专业知识解释条件，企业材料证明事实，人工复核记录结论。</p></div>
+  </aside>
+  <section class="conversation">
+    <div class="conversation-heading"><div><span class="eyebrow">FINANCIAL ASSISTANT</span><h1 id="session-title">让专业判断有依据</h1><p id="session-meta">选择或创建企业会话，持续完善匹配结论。</p></div><button id="export" disabled class="quiet">导出完整记录</button></div>
+    <div class="actions"><select id="match-product" aria-label="匹配范围"><option value="">全部产品</option></select><button id="match" class="primary" disabled>开始匹配</button><button id="refresh-session" disabled>刷新会话</button></div>
+    <div id="matching-progress" class="matching-progress" hidden>
+      <div class="matching-progress-heading"><span id="matching-progress-label" role="status" aria-live="polite">正在准备匹配…</span><strong id="matching-progress-percent">0%</strong></div>
+      <div id="matching-progress-track" class="matching-progress-track" role="progressbar" aria-label="整体匹配进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="matching-progress-fill"></div></div>
+      <div class="matching-progress-meta"><span id="matching-progress-count">等待产品清单</span><span id="matching-progress-elapsed">已用 0 秒</span></div>
+    </div>
+    <div id="messages" class="messages" aria-live="polite"><div class="welcome"><div class="spark">✧</div><h2>从“待核验”，走向有据可查。</h2><p>匹配后查看产品反馈，补充材料、专业知识或人工确认。点击消息中的“查看本次结果”回看对应匹配。</p></div></div>
+    <details class="supplement"><summary>补充企业事实 / 材料</summary><form id="supplement-form">
+      <p class="hint">可以新增事实，也可以选择已有文件，直接修改内容并保存。</p>
+      <div class="supplement-grid">
+        <label id="supplement-scope">适用范围<select id="supplement-product"><option value="">企业通用事实（所有相关产品）</option></select></label>
+        <label>操作方式<select id="supplement-mode"><option value="ADD">新增事实</option><option value="EDIT">修改已有文件</option></select></label>
+      </div>
+      <div id="supplement-condition-fields" hidden><label>限定申请条款（选填，留空适用于该产品）<textarea id="supplement-condition" maxlength="8000" rows="2" placeholder="逐字引用对应申请条件"></textarea></label><details><summary>查看该产品申请条件原文</summary><p id="supplement-product-source" class="source-preview"></p></details></div>
+      <div id="document-edit-fields" hidden>
+        <label>选择文件<select id="edit-document"><option value="">选择已有文件</option></select></label>
+        <label>文件内容<textarea id="document-content" rows="12" placeholder="选择文件后自动显示完整内容，可直接修改。" disabled></textarea></label>
+      </div>
+      <label id="supplement-text-field">补充后的事实<textarea id="supplement-text" required maxlength="30000" rows="3" placeholder="写明具体事实、对象、数量或期限。例如：本次拟申请该产品的贷款期限为3年。"></textarea></label>
+      <label id="supplement-verification-field">核实状态<select id="supplement-verification"><option value="UNVERIFIED">尚未核实，仅提供线索</option><option value="CONFIRMED">我已核实上述事实</option></select></label>
+      <button id="save-material" type="submit">保存材料</button><span class="hint">保存后请重新匹配相关产品。</span>
+    </form><details id="saved-supplements"><summary id="saved-supplements-title">已保存的人工补充</summary><div id="supplement-list"></div></details></details>
+  </section>
+  <section class="workbench">
+    <div class="tabs" role="tablist"><button id="results-tab" role="tab" aria-selected="true">匹配与复核</button><button id="knowledge-tab" role="tab" aria-selected="false">专业知识库</button></div>
+    <div id="results-panel">
+      <div id="result-navigation"></div>
+      <div class="result-tools"><strong id="result-count">暂无评估</strong><label>产品状态<select id="status-filter"><option value="all">全部产品</option><option value="FULLY_SATISFIED">完全满足</option><option value="PENDING_VERIFICATION">待核验（全部）</option><option value="MATERIAL_CONFIRMATION">待核验 · 材料待确认</option><option value="PROFESSIONAL_REVIEW">待核验 · 专业要求待解释</option><option value="NOT_ELIGIBLE">不符合条件</option></select></label></div>
+      <label>查找产品<input id="product-search" type="search" placeholder="输入产品名称或银行"></label>
+      <p id="status-summary" class="hint"></p><p class="hint">总览保留每个产品最近一次成功评估。单产品重跑只更新该产品；历史轮次只读。条款覆盖分仅作辅助。</p>
+      <p id="stale" class="warning" hidden></p><div id="history-snapshot"></div>
+      <div id="results"><div class="empty">完成匹配后，在这里逐条查看依据、补充知识和人工确认。</div></div></div>
+    <div id="knowledge-panel" hidden>
+      <p class="hint">只注入已发布且有效的解释。知识不能代替企业证明或银行认定；发布后请重新匹配相关产品。</p>
+      <details id="knowledge-editor"><summary>＋ 追加专业知识</summary><form id="knowledge-form">
+        <label>标题<input id="knowledge-title" required maxlength="200"></label>
+        <label>适用范围<select id="knowledge-product"><option value="">通用专业解释</option></select></label>
+        <label>对应申请条件原文<textarea id="knowledge-quote" rows="2" placeholder="产品专属知识必填，须逐字引用申请条件"></textarea></label>
+        <label>解释内容<textarea id="knowledge-content" rows="4" required maxlength="12000" placeholder="说明术语定义、判断口径及适用边界"></textarea></label>
+        <label>依据 / 来源<input id="knowledge-source" required maxlength="2000" placeholder="文件名称、条款、官方链接或核实记录"></label>
+        <label>录入人<input id="knowledge-author" required maxlength="100"></label><label>有效期至（可选）<input id="knowledge-expiry" type="date"></label>
+        <button class="primary">保存为草稿</button>
+      </form></details>
+      <div class="publication"><label>发布 / 停用审核人<input id="publisher" maxlength="100"></label><label>审核说明<input id="publish-reason" maxlength="2000" placeholder="说明口径、来源及适用范围已核实"></label></div>
+      <div id="knowledge-list"></div>
+    </div>
+  </section>
+</main>
+<dialog id="review-dialog"><form id="review-form"><h2>记录人工复核</h2><p id="review-target"></p><p class="hint">仅适用于当前企业和当前轮次。结论与模型原始判断分别保存。</p>
+<label>结论<select id="review-status"><option value="PASS">满足（整体复核时为完全满足）</option><option value="FAIL">不符合条件</option><option value="UNKNOWN_MATERIAL">待核验 · 材料待确认</option><option value="UNKNOWN_PROFESSIONAL">待核验 · 专业要求待解释</option><option value="UNKNOWN_BOTH">待核验 · 两类原因均有</option></select></label>
+<label>审核人<input id="reviewer" required maxlength="100"></label><label>判断理由<textarea id="review-reason" required maxlength="4000" rows="3"></textarea></label><label>核验依据 / 来源<textarea id="review-evidence" required maxlength="4000" rows="3" placeholder="核对的资料、文件编号、银行确认记录等"></textarea></label><div class="dialog-actions"><button type="button" id="close-review">取消</button><button class="primary">保存复核结论</button></div></form></dialog>
+</body></html>
