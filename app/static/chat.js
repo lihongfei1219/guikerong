@@ -63,6 +63,7 @@ async function work(action, message = "正在处理，请稍候…") {
       delete button.dataset.wasDisabled;
     });
     ["match", "refresh-session", "export"].forEach(id => { $(id).disabled = !state.session; });
+    updateSupplementFields();
   }
 }
 function chooseTab(knowledge) {
@@ -130,6 +131,7 @@ function startReview(product, conditionId, text) {
 function startKnowledge(product, quote) {
   chooseTab(true); $("knowledge-editor").open = true;
   $("knowledge-product").value = product.product_id; $("knowledge-quote").value = quote;
+  updateKnowledgeScope();
   $("knowledge-title").focus();
 }
 function reviewButton(product, id, text) {
@@ -167,6 +169,11 @@ function updateSupplementFields() {
   $("document-content").required = editing;
   $("document-content").disabled = !editing || !$("edit-document").value;
   $("save-material").textContent = editing ? "保存文件" : "保存材料";
+  const selected = state.session?.request.documents.some(d => d.document_id === $("edit-document").value);
+  const lastDocument = state.session?.request.documents.length === 1;
+  $("delete-document").hidden = !editing;
+  $("delete-document").disabled = state.busy || !selected || lastDocument;
+  $("last-document-hint").hidden = !editing || !selected || !lastDocument;
 }
 function loadDocumentContent() {
   const doc = state.session?.request.documents.find(d => d.document_id === $("edit-document").value);
@@ -182,6 +189,7 @@ function renderSupplements() {
   $("edit-document").replaceChildren(new Option("选择已有文件", ""));
   for (const doc of state.session.request.documents) $("edit-document").add(new Option(`${doc.filename} · ${doc.document_id.slice(-6)}`, doc.document_id));
   $("edit-document").value = selected;
+  if (!$("edit-document").value) $("document-content").value = "";
   const documents = state.session.request.documents.filter(d => d.human_supplement);
   $("saved-supplements-title").textContent = `已保存的人工补充（${documents.length} 条）`;
   $("supplement-list").replaceChildren();
@@ -284,7 +292,7 @@ function renderNavigation() {
     for (const item of items) knowledge.set(item.id, item);
   }
   snapshot.append(node("p", `本轮采用 ${knowledge.size} 条专业知识。`, "hint"));
-  for (const item of knowledge.values()) snapshot.append(node("h4", item.title), node("p", item.content), node("p", `来源：${item.source} · 版本 ${item.version}`, "hint"));
+  for (const item of knowledge.values()) snapshot.append(node("h4", item.title), node("p", item.content), node("p", `版本 ${item.version}`, "hint"));
   const reviews = data.reviews.filter(r => !productId || r.product_id === productId);
   if (reviews.length) {
     const trail = node("details"); trail.append(node("summary", "本轮人工复核记录"));
@@ -386,20 +394,22 @@ function renderResults() {
   }
   if (!$("results").children.length) $("results").append(node("div", session?.run ? "当前筛选下没有产品。" : "开始匹配后，将在此展示条款和原文依据。", "empty"));
 }
+function updateKnowledgeScope() {
+  $("knowledge-quote").required = Boolean($("knowledge-product").value);
+}
 function renderKnowledge() {
   $("knowledge-list").replaceChildren();
   for (const item of [...state.knowledge].reverse()) {
     const card = node("article", undefined, "knowledge-card");
-    card.append(node("h3", item.title), node("span", `${labels[item.status]}${item.status === "PUBLISHED" && item.applicable === false ? " · 已过期或产品条件变化" : ""}`, "tag"));
+    card.append(node("h3", item.title), node("span", `${labels[item.status]}${item.status === "PUBLISHED" && item.applicable === false ? " · 未匹配到适用产品条件" : ""}`, "tag"));
     const product = state.products.find(p => p.product_id === item.product_id);
-    card.append(node("p", product ? `适用产品：${product.product_name}` : "通用专业解释", "hint"), node("p", item.content), node("p", `来源：${item.source}\n录入：${item.author}${item.valid_until ? ` · 有效至 ${item.valid_until}` : ""}`, "hint"));
-    if (item.reviewer) card.append(node("p", `审核：${item.reviewer} · ${item.reason}`, "hint"));
+    card.append(node("p", product ? `适用产品：${product.product_name}` : "通用专业解释", "hint"), node("p", item.content));
+    if (item.condition_quote) card.append(node("p", `条款匹配：${item.condition_quote}`, "hint"));
     if (item.status !== "RETIRED") {
-      const button = node("button", item.status === "DRAFT" ? "审核并发布" : "停用");
+      const button = node("button", item.status === "DRAFT" ? "发布" : "停用");
       button.onclick = () => work(async () => {
-        if (!$("publisher").value.trim() || !$("publish-reason").value.trim()) throw new Error("请填写知识审核人和审核说明。");
         await api(`/knowledge/${item.id}/decision`, {expected_version: item.version,
-          status: item.status === "DRAFT" ? "PUBLISHED" : "RETIRED", reviewer: $("publisher").value, reason: $("publish-reason").value});
+          status: item.status === "DRAFT" ? "PUBLISHED" : "RETIRED"});
         await loadKnowledge();
         if (state.session) { state.session = await api(`/sessions/${state.session.id}`); renderSession(); }
       });
@@ -536,12 +546,22 @@ $("supplement-form").onsubmit = event => {
     $("supplement-form").reset(); renderSession();
   });
 };
+$("delete-document").onclick = () => {
+  if (state.busy) return;
+  const doc = state.session?.request.documents.find(d => d.document_id === $("edit-document").value);
+  if (!doc) { notice("请先选择要删除的文件。", true); return; }
+  if (!window.confirm(`确定删除“${doc.filename}”吗？\n删除后该文件不再用于后续匹配，历史评估仍保留原资料。`)) return;
+  work(async () => {
+    state.session = await api(`/sessions/${state.session.id}/documents/delete`, {
+      expected_version: state.session.version, document_id: doc.document_id});
+    renderSession(); loadDocumentContent();
+  }, "正在删除文件…");
+};
 $("knowledge-form").onsubmit = event => {
   event.preventDefault(); work(async () => {
     await api("/knowledge", {title: $("knowledge-title").value, content: $("knowledge-content").value,
-      source: $("knowledge-source").value, author: $("knowledge-author").value, product_id: $("knowledge-product").value || null,
-      condition_quote: $("knowledge-quote").value, valid_until: $("knowledge-expiry").value || null});
-    $("knowledge-form").reset(); await loadKnowledge();
+      product_id: $("knowledge-product").value || null, condition_quote: $("knowledge-quote").value});
+    $("knowledge-form").reset(); updateKnowledgeScope(); await loadKnowledge();
   });
 };
 $("review-form").onsubmit = event => {
@@ -569,7 +589,7 @@ $("edit-document").onchange = loadDocumentContent;
 $("product-search").oninput = renderResults;
 $("results-tab").onclick = () => chooseTab(false);
 $("knowledge-tab").onclick = () => chooseTab(true);
-$("knowledge-product").onchange = () => { if (!$("knowledge-product").value) $("knowledge-quote").value = ""; };
+$("knowledge-product").onchange = updateKnowledgeScope;
 $("export").onclick = () => work(async () => {
   const data = await api(`/sessions/${state.session.id}/events`);
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: "application/json"}));

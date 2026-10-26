@@ -1,6 +1,5 @@
 """Human commands are explicit typed inputs, never model-generated side effects."""
 
-from datetime import date
 from typing import Literal
 
 from pydantic import ConfigDict, Field, field_validator, model_validator
@@ -19,6 +18,10 @@ class ChatCommand(VersionedCommand):
 class SupplementCommand(VersionedCommand):
     documents: list[Document] = Field(min_length=1, max_length=100)
     supplement: SupplementDetails | None = None
+
+
+class DocumentDeleteCommand(VersionedCommand):
+    document_id: str = Field(min_length=1, max_length=128)
 
 
 class DocumentEditCommand(VersionedCommand):
@@ -61,23 +64,16 @@ class ReviewCommand(VersionedCommand):
 class KnowledgeDraft(Model):
     title: str = Field(min_length=1, max_length=200)
     content: str = Field(min_length=1, max_length=12000)
-    source: str = Field(min_length=1, max_length=2000)
-    author: str = Field(min_length=1, max_length=100)
     product_id: str | None = None
     condition_quote: str = Field(default="", max_length=8000)
-    valid_until: date | None = None
 
     @model_validator(mode="after")
     def scope(self):
         if self.product_id and not self.condition_quote:
-            raise ValueError("产品专属知识必须指定申请条件原文")
-        if not self.product_id and self.condition_quote:
-            raise ValueError("通用知识不应指定产品条件")
+            raise ValueError("产品专属知识必须填写条款关键词或近似表述")
         return self
 
 
 class KnowledgeDecision(Model):
     expected_version: int = Field(ge=1)
     status: Literal["PUBLISHED", "RETIRED"]
-    reviewer: str = Field(min_length=1, max_length=100)
-    reason: str = Field(min_length=1, max_length=2000)

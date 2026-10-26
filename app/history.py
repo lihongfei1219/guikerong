@@ -6,6 +6,11 @@ from app.models import MatchRequest, MatchResponse, ProductDecision, Status, Ver
 from app.product_status import classify, required_actions
 
 
+def read_knowledge(data):
+    return deepcopy({key: value for key, value in data.items()
+                     if key not in {"source", "author", "valid_until", "reviewer", "reason"}})
+
+
 def read_request(data):
     snapshot = deepcopy(data)
     for document in snapshot.get("documents", []):

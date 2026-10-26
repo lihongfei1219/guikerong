@@ -36,7 +36,7 @@
     </div>
     <div id="messages" class="messages" aria-live="polite"><div class="welcome"><div class="spark">✧</div><h2>从“待核验”，走向有据可查。</h2><p>匹配后查看产品反馈，补充材料、专业知识或人工确认。点击消息中的“查看本次结果”回看对应匹配。</p></div></div>
     <details class="supplement"><summary>补充企业事实 / 材料</summary><form id="supplement-form">
-      <p class="hint">可以新增事实，也可以选择已有文件，直接修改内容并保存。</p>
+      <p class="hint">可以新增事实，也可以选择已有文件，修改内容并保存，或删除该文件。</p>
       <div class="supplement-grid">
         <label id="supplement-scope">适用范围<select id="supplement-product"><option value="">企业通用事实（所有相关产品）</option></select></label>
         <label>操作方式<select id="supplement-mode"><option value="ADD">新增事实</option><option value="EDIT">修改已有文件</option></select></label>
@@ -48,7 +48,10 @@
       </div>
       <label id="supplement-text-field">补充后的事实<textarea id="supplement-text" required maxlength="30000" rows="3" placeholder="写明具体事实、对象、数量或期限。例如：本次拟申请该产品的贷款期限为3年。"></textarea></label>
       <label id="supplement-verification-field">核实状态<select id="supplement-verification"><option value="UNVERIFIED">尚未核实，仅提供线索</option><option value="CONFIRMED">我已核实上述事实</option></select></label>
-      <button id="save-material" type="submit">保存材料</button><span class="hint">保存后请重新匹配相关产品。</span>
+      <button id="save-material" type="submit">保存材料</button>
+      <button id="delete-document" type="button" class="danger" hidden disabled>删除文件</button>
+      <span class="hint">保存或删除后请重新匹配相关产品。</span>
+      <p id="last-document-hint" class="hint" hidden>至少保留一份企业资料，请先补充新资料再删除此文件。</p>
     </form><details id="saved-supplements"><summary id="saved-supplements-title">已保存的人工补充</summary><div id="supplement-list"></div></details></details>
   </section>
   <section class="workbench">
@@ -64,14 +67,12 @@
       <p class="hint">只注入已发布且有效的解释。知识不能代替企业证明或银行认定；发布后请重新匹配相关产品。</p>
       <details id="knowledge-editor"><summary>＋ 追加专业知识</summary><form id="knowledge-form">
         <label>标题<input id="knowledge-title" required maxlength="200"></label>
-        <label>适用范围<select id="knowledge-product"><option value="">通用专业解释</option></select></label>
-        <label>对应申请条件原文<textarea id="knowledge-quote" rows="2" placeholder="产品专属知识必填，须逐字引用申请条件"></textarea></label>
+        <label>适用范围<select id="knowledge-product"><option value="">通用专业解释（可匹配多个产品）</option></select></label>
+        <label>适用条款 / 关键词（模糊匹配）<textarea id="knowledge-quote" maxlength="8000" rows="2" placeholder="填写关键词或近似表述，例如：I类知识产权、企业实际经营满一年"></textarea></label>
+        <p class="hint">匹配申请条件后，携带下方完整解释。指定产品时必填；通用范围留空则适用于全部产品。</p>
         <label>解释内容<textarea id="knowledge-content" rows="4" required maxlength="12000" placeholder="说明术语定义、判断口径及适用边界"></textarea></label>
-        <label>依据 / 来源<input id="knowledge-source" required maxlength="2000" placeholder="文件名称、条款、官方链接或核实记录"></label>
-        <label>录入人<input id="knowledge-author" required maxlength="100"></label><label>有效期至（可选）<input id="knowledge-expiry" type="date"></label>
         <button class="primary">保存为草稿</button>
       </form></details>
-      <div class="publication"><label>发布 / 停用审核人<input id="publisher" maxlength="100"></label><label>审核说明<input id="publish-reason" maxlength="2000" placeholder="说明口径、来源及适用范围已核实"></label></div>
       <div id="knowledge-list"></div>
     </div>
   </section>

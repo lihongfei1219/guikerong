@@ -168,7 +168,7 @@ def review(client, session, condition="ip", status="PASS", **updates):
 def draft(client, **updates):
     response = client.post("/api/v1/knowledge", json={
         "title": "知识产权分类口径", "content": "已授权发明专利属于I类；仍需核对企业权属。",
-        "source": "测试口径文件，不用于真实业务", "author": "专家甲", "product_id": "p1",
+        "product_id": "p1",
         "condition_quote": "拥有I类知识产权", **updates,
     })
     assert response.status_code == 201, response.text
@@ -177,7 +177,7 @@ def draft(client, **updates):
 
 def publish(client, item, status="PUBLISHED"):
     response = client.post(f"/api/v1/knowledge/{item['id']}/decision", json={
-        "expected_version": item["version"], "status": status, "reviewer": "专家乙", "reason": "已核对适用边界",
+        "expected_version": item["version"], "status": status,
     })
     assert response.status_code == 200, response.text
     return next(k for k in response.json()["items"] if k["id"] == item["id"])
@@ -281,21 +281,17 @@ def test_session_and_human_commands_work_without_tokens(environment):
     assert client.get("/chat").status_code == 200
 
 
-def test_expired_or_changed_product_knowledge_is_not_used(environment, monkeypatch):
+def test_changed_product_knowledge_is_not_used(environment):
     client, _, _, application = environment
-    monkeypatch.setattr("app.harness.today", lambda: date(2026, 10, 24))
-    item = publish(client, draft(client, valid_until="2026-10-25"))
+    item = publish(client, draft(client))
     harness = application.state.harness
     assert harness.knowledge_context(sample_catalog())["p1"]
-    monkeypatch.setattr("app.harness.today", lambda: date(2026, 10, 26))
-    assert not harness.knowledge_context(sample_catalog())["p1"]
-    monkeypatch.setattr("app.harness.today", lambda: date(2026, 10, 24))
     changed = sample_catalog()
-    changed.products[0].application_conditions += "；银行要求"
+    changed.products[0].application_conditions = "企业成立满一年"
     assert not harness.knowledge_context(changed)["p1"]
     # Published content cannot be overwritten or republished under the same ID.
     response = client.post(f"/api/v1/knowledge/{item['id']}/decision", json={
-        "expected_version": item["version"], "status": "PUBLISHED", "reviewer": "乙", "reason": "修改",
+        "expected_version": item["version"], "status": "PUBLISHED",
     })
     assert response.status_code == 409
 
@@ -303,7 +299,7 @@ def test_expired_or_changed_product_knowledge_is_not_used(environment, monkeypat
 def test_knowledge_is_kept_in_repair_budget_and_is_not_accepted_as_document_citation():
     product = sample_catalog().products[0]
     request = MatchRequest.model_validate(request_body())
-    knowledge = [{"id": "k1", "content": "分类解释", "source": "测试"}]
+    knowledge = [{"id": "k1", "content": "分类解释"}]
     messages = build_messages(product, request, date(2026, 10, 24), expert_knowledge=knowledge)
     repair = build_repair_messages(product, request, date(2026, 10, 24), {},
                                    {"reason": "INVALID_EVIDENCE_CITATION"}, expert_knowledge=knowledge)

@@ -15,7 +15,8 @@ from app.errors import DomainError
 from app.harness_models import KnowledgeDecision, KnowledgeDraft, ReviewCommand
 from app.harness_projection import project, run_detail
 from app.harness_store import EventStore
-from app.history import read_request, read_result
+from app.history import read_knowledge, read_request, read_result
+from app.knowledge_matching import matching_knowledge
 from app.models import Catalog, HumanSupplement, MatchRequest, Status, VerificationNeed
 from app.product_status import classify, needs_for, product_sort_key, required_actions
 from app.scoring import calculate_match_score
@@ -33,10 +34,6 @@ current_result 汇总各产品最近一次成功评估；stale=true 的结论仅
 latest_attempt 若失败或中断，明确说明保留的是上次成功结果，不能声称本次匹配成功。
 企业文档中的 human_supplement 是人工补充元数据，须遵守其产品/条款范围；已核实仅是用户声明，不能凭此宣布通过。
 不得宣布贷款已批准。返回 JSON 对象，唯一字段 reply 为中文回答字符串。"""
-
-
-def today():
-    return datetime.now(SHANGHAI).date()
 
 
 class FinancialHarness:
@@ -78,7 +75,7 @@ class FinancialHarness:
                             recorded_at=event["created_at"], legacy=True,
                         )
                 state["input_revision"] = event["version"]
-            elif event["kind"] == "documents/updated":
+            elif event["kind"] in {"documents/updated", "documents/deleted"}:
                 request = read_request(data)
                 state["input_revision"] = event["version"]
             elif event["kind"] in {"user/message", "assistant/message"}:
@@ -204,11 +201,28 @@ class FinancialHarness:
         ])
         return self.session(identifier, catalog)
 
+    def delete_document(self, identifier, command, catalog=None):
+        state = self.session(identifier)
+        if state["version"] != command.expected_version:
+            raise DomainError("SESSION_CONFLICT", "记录已更新，请刷新后再操作。", 409)
+        request = read_request(state["request"])
+        document = next((d for d in request.documents if d.document_id == command.document_id), None)
+        if document is None:
+            raise DomainError("DOCUMENT_NOT_FOUND", "所选文件不存在，请重新选择。", 404)
+        if len(request.documents) == 1:
+            raise DomainError("LAST_DOCUMENT", "至少保留一份企业资料，请先补充新资料再删除此文件。", 400)
+        request.documents = [d for d in request.documents if d.document_id != command.document_id]
+        self.store.append(identifier, command.expected_version, [
+            ("documents/deleted", request.model_dump(mode="json")),
+            ("assistant/message", {"content": f"文件“{document.filename}”已删除，请重新匹配相关产品。历史评估保留原资料。"}),
+        ])
+        return self.session(identifier, catalog)
+
     def knowledge(self) -> dict:
         events = self.store.read("knowledge")
         items = {}
         for event in events:
-            data = event["data"]
+            data = read_knowledge(event["data"])
             if event["kind"] == "knowledge/drafted":
                 items[data["id"]] = {**data, "status": "DRAFT", "version": event["version"],
                                      "created_at": event["created_at"]}
@@ -220,11 +234,11 @@ class FinancialHarness:
         data = draft.model_dump(mode="json")
         if draft.product_id:
             product = next((p for p in catalog.products if p.product_id == draft.product_id), None)
-            if not product or draft.condition_quote not in product.application_conditions:
-                raise DomainError("INVALID_KNOWLEDGE_SCOPE", "请选择有效产品并引用其申请条件原文。", 400)
+            if not product:
+                raise DomainError("INVALID_KNOWLEDGE_SCOPE", "请选择有效产品。", 400)
             data["application_conditions"] = product.application_conditions
-        if draft.valid_until and draft.valid_until < today():
-            raise DomainError("KNOWLEDGE_EXPIRED", "知识有效期不能早于今天。", 400)
+        if draft.condition_quote and not self.knowledge_valid(data, catalog):
+            raise DomainError("INVALID_KNOWLEDGE_SCOPE", "未匹配到适用产品的申请条件，请调整条款关键词或近似表述。", 400)
         data["id"] = f"knowledge_{uuid4().hex}"
         self.store.append("knowledge", self.knowledge()["version"], [("knowledge/drafted", data)])
         return self.knowledge()
@@ -246,17 +260,11 @@ class FinancialHarness:
 
     @staticmethod
     def knowledge_valid(item, catalog):
-        if item.get("valid_until") and item["valid_until"] < today().isoformat():
-            return False
-        if item.get("product_id"):
-            return any(p.product_id == item["product_id"] and
-                       p.application_conditions == item.get("application_conditions") for p in catalog.products)
-        return True
+        return any(matching_knowledge(item, product) is not None for product in catalog.products)
 
     def knowledge_context(self, catalog):
-        items = [k for k in self.knowledge()["items"]
-                 if k["status"] == "PUBLISHED" and self.knowledge_valid(k, catalog)]
-        return {p.product_id: [k for k in items if not k.get("product_id") or k["product_id"] == p.product_id]
+        items = [k for k in self.knowledge()["items"] if k["status"] == "PUBLISHED"]
+        return {p.product_id: [matched for item in items if (matched := matching_knowledge(item, p)) is not None]
                 for p in catalog.products}
 
     async def match(self, identifier, command, catalog, *, on_progress=None):

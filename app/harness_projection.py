@@ -4,13 +4,14 @@ import hashlib
 import json
 
 from app.errors import DomainError
-from app.history import read_request
+from app.history import read_knowledge, read_request
 from app.product_status import product_sort_key
 from app.supplements import input_fingerprint
 
 
 def fingerprint(items):
-    content = json.dumps(sorted(items, key=lambda item: item["id"]), sort_keys=True, ensure_ascii=False)
+    content = json.dumps(sorted((read_knowledge(item) for item in items), key=lambda item: item["id"]),
+                         sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(content.encode()).hexdigest()
 
 
@@ -21,6 +22,9 @@ def runs_from(events):
         kind = event["kind"]
         if kind == "match/requested":
             snapshot = {**data, "request": read_request(data["request"]).model_dump(mode="json")}
+            if "knowledge" in snapshot:
+                snapshot["knowledge"] = {pid: [read_knowledge(item) for item in items]
+                                         for pid, items in snapshot["knowledge"].items()}
             runs[data["id"]] = {"id": data["id"], "snapshot": snapshot, "status": "INCOMPLETE",
                                 "created_at": event["created_at"], "result": None}
         elif kind == "match/completed":
@@ -96,7 +100,7 @@ def project(state, render, catalog=None, knowledge=None):
             if "knowledge" not in snapshot:
                 reasons.append("历史知识快照不完整")
             elif fingerprint(snapshot["knowledge"].get(pid, [])) != fingerprint((knowledge or {}).get(pid, [])):
-                reasons.append("适用专业知识已更新、停用或过期")
+                reasons.append("适用专业知识已更新或停用")
         product.update(stale=bool(reasons), stale_reasons=reasons, history_count=counts.get(pid, 1),
                        knowledge_fingerprint=fingerprint(snapshot.get("knowledge", {}).get(pid, [])),
                        latest_attempt=attempts.get(pid))

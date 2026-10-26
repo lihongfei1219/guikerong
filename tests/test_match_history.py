@@ -2,7 +2,6 @@
 
 import json
 from copy import deepcopy
-from datetime import date
 
 import pytest
 
@@ -93,10 +92,10 @@ def test_document_refresh_is_per_product_and_chat_receives_entire_overview(envir
     assert len(old["snapshot"]["request"]["documents"]) == 1
 
 
-def test_knowledge_freshness_scopes_draft_publish_retire_and_expiry(environment, monkeypatch):
+def test_knowledge_freshness_scopes_draft_publish_and_retire(environment):
     client, _, _, _ = environment
     first = match(client, create(client))
-    item = draft(client, valid_until="2099-01-01")
+    item = draft(client)
     assert not refresh(client, first)["stale"]
     item = publish(client, item)
     changed = refresh(client, first)
@@ -104,9 +103,6 @@ def test_knowledge_freshness_scopes_draft_publish_retire_and_expiry(environment,
     assert review(client, changed).status_code == 409
     second = match(client, changed, ["p1"])
     assert not second["stale"]
-    monkeypatch.setattr("app.harness.today", lambda: date(2099, 1, 2))
-    assert products(refresh(client, second))["p1"]["stale"]
-    monkeypatch.setattr("app.harness.today", lambda: date(2026, 10, 26))
     publish(client, item, "RETIRED")
     assert products(refresh(client, second))["p1"]["stale"]
     third = match(client, refresh(client, second), ["p1"])

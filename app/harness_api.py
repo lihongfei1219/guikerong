@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from app.errors import DomainError
 from app.harness_models import (
     ChatCommand,
+    DocumentDeleteCommand,
     DocumentEditCommand,
     KnowledgeDecision,
     KnowledgeDraft,
@@ -60,6 +61,10 @@ def create_harness_router(harness, get_catalog):
     @router.post("/sessions/{identifier}/documents/edit")
     def edit_document(identifier: str, payload: DocumentEditCommand):
         return public_state(harness.edit_document(identifier, payload, get_catalog()))
+
+    @router.post("/sessions/{identifier}/documents/delete")
+    def delete_document(identifier: str, payload: DocumentDeleteCommand):
+        return public_state(harness.delete_document(identifier, payload, get_catalog()))
 
     @router.post("/sessions/{identifier}/messages")
     async def message(identifier: str, payload: ChatCommand):
