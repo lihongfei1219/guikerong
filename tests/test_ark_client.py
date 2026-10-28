@@ -6,9 +6,9 @@ from dataclasses import replace
 import httpx
 import pytest
 
-from app.ark_client import MAX_RESPONSE_BYTES, ArkClient
-from app.config import Settings
-from app.errors import DomainError
+from guikerong_finance.config import Settings
+from guikerong_finance.errors import DomainError
+from guikerong_finance.service.ark_client import MAX_RESPONSE_BYTES, ArkClient
 
 MESSAGES = [{"role": "user", "content": "请返回企业匹配结果"}]
 BASE = Settings(matching_mode="ark", ark_api_key="fake-private-key", ark_model="ep-test", ark_max_retries=0)
@@ -22,6 +22,7 @@ def run_request(handler, settings=BASE, messages=MESSAGES):
     async def run():
         async with ArkClient(settings, transport=httpx.MockTransport(handler)) as client:
             return await client.complete_json(messages)
+
     return asyncio.run(run())
 
 
@@ -48,8 +49,12 @@ def test_request_uses_configured_endpoint_auth_and_json_contract():
 
 def test_native_deepseek_uses_official_endpoint_and_max_tokens():
     configuration = replace(
-        BASE, matching_mode="deepseek", ark_base_url="https://api.deepseek.com",
-        ark_model="deepseek-flash", ark_api_key="fake-deepseek-private-key", ark_max_completion_tokens=2048,
+        BASE,
+        matching_mode="deepseek",
+        ark_base_url="https://api.deepseek.com",
+        ark_model="deepseek-flash",
+        ark_api_key="fake-deepseek-private-key",
+        ark_max_completion_tokens=2048,
     )
     calls = []
 
@@ -78,13 +83,20 @@ def test_thinking_configuration(mode):
         else:
             assert body["thinking"] == {"type": mode}
         return response()
+
     run_request(handler, replace(BASE, ark_thinking=mode))
 
 
-@pytest.mark.parametrize("status,code", [
-    (401, "ARK_AUTH_ERROR"), (403, "ARK_AUTH_ERROR"),
-    (400, "ARK_REQUEST_REJECTED"), (404, "ARK_REQUEST_REJECTED"), (422, "ARK_REQUEST_REJECTED"),
-])
+@pytest.mark.parametrize(
+    ("status", "code"),
+    [
+        (401, "ARK_AUTH_ERROR"),
+        (403, "ARK_AUTH_ERROR"),
+        (400, "ARK_REQUEST_REJECTED"),
+        (404, "ARK_REQUEST_REJECTED"),
+        (422, "ARK_REQUEST_REJECTED"),
+    ],
+)
 def test_permanent_http_failures_are_private_and_not_retried(status, code):
     calls = []
 
@@ -122,7 +134,7 @@ def test_transient_status_retries_with_bounded_delay(monkeypatch, status):
     async def sleep(delay):
         delays.append(delay)
 
-    monkeypatch.setattr("app.ark_client.asyncio.sleep", sleep)
+    monkeypatch.setattr("guikerong_finance.service.ark_client.asyncio.sleep", sleep)
 
     def handler(request):
         calls.append(request)
@@ -130,15 +142,16 @@ def test_transient_status_retries_with_bounded_delay(monkeypatch, status):
 
     assert run_request(handler, replace(BASE, ark_max_retries=2)) == {"result": "ok"}
     assert len(calls) == 3
-    assert len(delays) == 2 and all(0 <= delay <= 2 for delay in delays)
+    assert len(delays) == 2
+    assert all(0 <= delay <= 2 for delay in delays)
 
 
-@pytest.mark.parametrize("status,code", [(429, "ARK_RATE_LIMITED"), (503, "ARK_UNAVAILABLE")])
+@pytest.mark.parametrize(("status", "code"), [(429, "ARK_RATE_LIMITED"), (503, "ARK_UNAVAILABLE")])
 def test_exhausted_retry_preserves_static_domain_error(monkeypatch, status, code):
     async def sleep(_):
         pass
 
-    monkeypatch.setattr("app.ark_client.asyncio.sleep", sleep)
+    monkeypatch.setattr("guikerong_finance.service.ark_client.asyncio.sleep", sleep)
     calls = []
 
     def handler(request):
@@ -156,7 +169,7 @@ def test_transient_connection_loss_retries(monkeypatch):
     async def sleep(_):
         pass
 
-    monkeypatch.setattr("app.ark_client.asyncio.sleep", sleep)
+    monkeypatch.setattr("guikerong_finance.service.ark_client.asyncio.sleep", sleep)
     calls = []
 
     def handler(request):
@@ -186,7 +199,10 @@ def test_tls_certificate_error_is_not_retried():
     assert "private" not in str(caught.value)
 
 
-@pytest.mark.parametrize("content", ["", "not json", "[]", "null", '{"x":NaN}', '{"x":Infinity}', '{"x":1e999}', '{"x":1,"x":2}', '```json\n{}\n```'])
+@pytest.mark.parametrize(
+    "content",
+    ["", "not json", "[]", "null", '{"x":NaN}', '{"x":Infinity}', '{"x":1e999}', '{"x":1,"x":2}', "```json\n{}\n```"],
+)
 def test_invalid_model_content_is_not_retried(content):
     calls = []
 
@@ -208,7 +224,10 @@ def test_truncated_or_nonfinal_completion_rejected(finish_reason):
     assert caught.value.code == "ARK_INVALID_RESPONSE"
 
 
-@pytest.mark.parametrize("envelope", [{}, {"choices": []}, {"choices": [None]}, {"choices": [{"finish_reason": "stop", "message": {"content": None}}]}])
+@pytest.mark.parametrize(
+    "envelope",
+    [{}, {"choices": []}, {"choices": [None]}, {"choices": [{"finish_reason": "stop", "message": {"content": None}}]}],
+)
 def test_malformed_response_envelope_rejected(envelope):
     with pytest.raises(DomainError) as caught:
         run_request(lambda _: httpx.Response(200, json=envelope))
@@ -238,14 +257,18 @@ def test_streamed_response_size_is_bounded_even_without_content_length():
     with pytest.raises(DomainError) as caught:
         run_request(lambda _: httpx.Response(200, stream=stream))
     assert caught.value.code == "ARK_INVALID_RESPONSE"
-    assert stream.closed and stream.read_count == 2
+    assert stream.closed
+    assert stream.read_count == 2
 
 
 def test_oversized_declared_response_is_rejected_before_reading():
     stream = Chunks([b"unused"])
     with pytest.raises(DomainError):
-        run_request(lambda _: httpx.Response(200, headers={"content-length": str(MAX_RESPONSE_BYTES + 1)}, stream=stream))
-    assert stream.closed and stream.read_count == 0
+        run_request(
+            lambda _: httpx.Response(200, headers={"content-length": str(MAX_RESPONSE_BYTES + 1)}, stream=stream)
+        )
+    assert stream.closed
+    assert stream.read_count == 0
 
 
 def test_total_request_timeout_covers_slow_body_not_only_idle_periods():
@@ -254,7 +277,8 @@ def test_total_request_timeout_covers_slow_body_not_only_idle_periods():
         run_request(lambda _: httpx.Response(200, stream=stream), replace(BASE, ark_timeout_seconds=0.035))
     assert caught.value.code == "ARK_TIMEOUT"
     assert caught.value.status_code == 504
-    assert stream.closed and stream.read_count < 30
+    assert stream.closed
+    assert stream.read_count < 30
 
 
 def test_cancellation_propagates_and_closes_response_without_retry():
@@ -280,7 +304,8 @@ def test_cancellation_propagates_and_closes_response_without_retry():
             task.cancel()
             with pytest.raises(asyncio.CancelledError):
                 await task
-        assert stream.closed and len(calls) == 1
+        assert stream.closed
+        assert len(calls) == 1
 
     asyncio.run(run())
 
@@ -307,16 +332,16 @@ def test_client_bounds_concurrent_calls():
 
 
 def test_client_validates_direct_configuration_before_http_setup():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=".+"):
         ArkClient(replace(BASE, ark_base_url="http://unsafe.test"))
 
 
 @pytest.mark.parametrize("changes", [{"ark_api_key": None}, {"ark_model": ""}])
 def test_client_requires_model_configuration_before_http_setup(monkeypatch, changes):
-    def forbidden(*args, **kwargs):
+    def forbidden(*_args: object, **_kwargs):
         pytest.fail("missing credentials must be rejected before HTTP client setup")
 
-    monkeypatch.setattr("app.ark_client.httpx.AsyncClient", forbidden)
+    monkeypatch.setattr("guikerong_finance.service.ark_client.httpx.AsyncClient", forbidden)
     with pytest.raises(DomainError) as caught:
         ArkClient(replace(BASE, **changes))
     assert caught.value.code == "MODEL_NOT_CONFIGURED"

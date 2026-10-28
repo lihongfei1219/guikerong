@@ -3,13 +3,18 @@ from copy import deepcopy
 
 import pytest
 
-from app.harness_store import EventStore
+from guikerong_finance.db.events import EventStore
 from tests.test_harness import create, draft, environment, match, publish
 
 __all__ = ["environment"]
 
-RETIRED = {"source": "旧来源", "author": "旧录入人", "valid_until": "2000-01-01",
-           "reviewer": "旧审核人", "reason": "旧审核说明"}
+RETIRED = {
+    "source": "旧来源",
+    "author": "旧录入人",
+    "valid_until": "2000-01-01",
+    "reviewer": "旧审核人",
+    "reason": "旧审核说明",
+}
 
 
 def test_knowledge_can_be_saved_published_and_used_without_retired_fields(environment):
@@ -28,9 +33,14 @@ def test_knowledge_can_be_saved_published_and_used_without_retired_fields(enviro
 @pytest.mark.parametrize("field", RETIRED)
 def test_retired_fields_are_not_accepted_in_new_knowledge(environment, field):
     client, settings, _, _ = environment
-    response = client.post("/api/v1/knowledge", json={
-        "title": "解释", "content": "专业术语的解释。", field: RETIRED[field],
-    })
+    response = client.post(
+        "/api/v1/knowledge",
+        json={
+            "title": "解释",
+            "content": "专业术语的解释。",
+            field: RETIRED[field],
+        },
+    )
     assert response.status_code == 400
     assert EventStore(settings.harness_db_path).read("knowledge") == []
 
@@ -38,16 +48,41 @@ def test_retired_fields_are_not_accepted_in_new_knowledge(environment, field):
 def test_legacy_knowledge_and_history_ignore_removed_fields_without_rewriting_events(environment):
     client, settings, calls, _ = environment
     store = EventStore(settings.harness_db_path)
-    store.append("knowledge", 0, [("knowledge/drafted", {
-        "id": "legacy-knowledge", "title": "历史解释", "content": "发明专利属于I类。",
-        "product_id": None, "condition_quote": "", **RETIRED,
-    })])
+    store.append(
+        "knowledge",
+        0,
+        [
+            (
+                "knowledge/drafted",
+                {
+                    "id": "legacy-knowledge",
+                    "title": "历史解释",
+                    "content": "发明专利属于I类。",
+                    "product_id": None,
+                    "condition_quote": "",
+                    **RETIRED,
+                },
+            )
+        ],
+    )
     legacy = client.get("/api/v1/knowledge").json()["items"][0]
     assert RETIRED.keys().isdisjoint(legacy)
-    store.append("knowledge", 1, [("knowledge/decided", {
-        "id": legacy["id"], "expected_version": legacy["version"], "status": "PUBLISHED",
-        "reviewer": RETIRED["reviewer"], "reason": RETIRED["reason"],
-    })])
+    store.append(
+        "knowledge",
+        1,
+        [
+            (
+                "knowledge/decided",
+                {
+                    "id": legacy["id"],
+                    "expected_version": legacy["version"],
+                    "status": "PUBLISHED",
+                    "reviewer": RETIRED["reviewer"],
+                    "reason": RETIRED["reason"],
+                },
+            )
+        ],
+    )
     published = client.get("/api/v1/knowledge").json()["items"][0]
     assert RETIRED.keys().isdisjoint(published)
     saved_knowledge = store.read("knowledge")
@@ -79,9 +114,14 @@ def test_removed_decision_fields_are_rejected_without_changing_knowledge(environ
     item = draft(client)
     store = EventStore(settings.harness_db_path)
     before = store.read("knowledge")
-    response = client.post(f"/api/v1/knowledge/{item['id']}/decision", json={
-        "expected_version": item["version"], "status": "PUBLISHED", field: RETIRED[field],
-    })
+    response = client.post(
+        f"/api/v1/knowledge/{item['id']}/decision",
+        json={
+            "expected_version": item["version"],
+            "status": "PUBLISHED",
+            field: RETIRED[field],
+        },
+    )
     assert response.status_code == 400
     assert store.read("knowledge") == before
 

@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from app.harness_store import EventStore
+from guikerong_finance.db.events import EventStore
 from tests.test_continuation import save
 from tests.test_harness import create, environment, match
 
@@ -12,8 +12,10 @@ __all__ = ["environment"]
 
 
 def ask(client, session, **kwargs):
-    return client.post(f"/api/v1/sessions/{session['id']}/messages", json={
-        "expected_version": session["version"], "message": "本次拟贷款两年，这能满足条件吗？", **kwargs})
+    return client.post(
+        f"/api/v1/sessions/{session['id']}/messages",
+        json={"expected_version": session["version"], "message": "本次拟贷款两年，这能满足条件吗？", **kwargs},
+    )
 
 
 def test_chat_focus_is_explicit_and_question_does_not_become_matching_material(environment):
@@ -48,10 +50,15 @@ def test_history_question_receives_only_selected_snapshot_not_later_documents_or
     assert response.json()["messages"][-1]["context_label"].startswith("历史轮次提问")
 
 
-@pytest.mark.parametrize("scope", [
-    {"product_id": "missing"}, {"condition_quote": "拥有I类知识产权"},
-    {"product_id": "p1", "condition_quote": "不存在的条款"}, {"run_id": "missing"},
-])
+@pytest.mark.parametrize(
+    "scope",
+    [
+        {"product_id": "missing"},
+        {"condition_quote": "拥有I类知识产权"},
+        {"product_id": "p1", "condition_quote": "不存在的条款"},
+        {"run_id": "missing"},
+    ],
+)
 def test_invalid_chat_scope_does_not_write_or_call_provider(environment, scope):
     client, settings, calls, _ = environment
     first = match(client, create(client))
@@ -66,9 +73,14 @@ def test_invalid_chat_scope_does_not_write_or_call_provider(environment, scope):
 def test_supplement_text_is_saved_in_conversation_and_survives_reload(environment):
     client, _, _, _ = environment
     first = match(client, create(client))
-    response = save(client, first, [{"condition_id": "ip", "content": "企业已核实拥有I类知识产权。", "verification": "CONFIRMED"}])
+    response = save(
+        client, first, [{"condition_id": "ip", "content": "企业已核实拥有I类知识产权。", "verification": "CONFIRMED"}]
+    )
     assert response.status_code == 200
     saved = response.json()
-    assert saved["messages"][-2] == {"role": "user", "content": "企业已核实拥有I类知识产权。",
-                                    "context_label": "补充事实 · 科技成长贷"}
+    assert saved["messages"][-2] == {
+        "role": "user",
+        "content": "企业已核实拥有I类知识产权。",
+        "context_label": "补充事实 · 科技成长贷",
+    }
     assert client.get(f"/api/v1/sessions/{saved['id']}").json()["messages"] == saved["messages"]

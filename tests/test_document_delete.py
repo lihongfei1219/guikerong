@@ -3,8 +3,8 @@ from copy import deepcopy
 
 import pytest
 
-from app.harness import FinancialHarness
-from app.harness_store import EventStore
+from guikerong_finance.db.events import EventStore
+from guikerong_finance.service.harness import FinancialHarness
 from tests.test_document_edit import edit
 from tests.test_harness import create, environment, match, sample_catalog
 from tests.test_supplements import supplement
@@ -13,8 +13,10 @@ __all__ = ["environment"]
 
 
 def delete(client, session, document_id):
-    return client.post(f"/api/v1/sessions/{session['id']}/documents/delete", json={
-        "expected_version": session["version"], "document_id": document_id})
+    return client.post(
+        f"/api/v1/sessions/{session['id']}/documents/delete",
+        json={"expected_version": session["version"], "document_id": document_id},
+    )
 
 
 def test_delete_scoped_supplement_preserves_history_and_updates_only_affected_product(environment):
@@ -30,7 +32,7 @@ def test_delete_scoped_supplement_preserves_history_and_updates_only_affected_pr
     assert {p["product_id"]: p["stale"] for p in changed["effective_matches"]} == {"p1": True, "p2": False}
     assert {p["product_id"]: p["can_review"] for p in changed["effective_matches"]} == {"p1": False, "p2": True}
     assert changed["run"]["result"] == original_result
-    assert EventStore(settings.harness_db_path).read(first["id"])[:len(before)] == before
+    assert EventStore(settings.harness_db_path).read(first["id"])[: len(before)] == before
     historical = client.get(f"/api/v1/sessions/{first['id']}/runs/{first['run']['id']}").json()
     assert historical["snapshot"]["request"] == original_request
     restarted = FinancialHarness(settings, EventStore(settings.harness_db_path)).session(first["id"], sample_catalog())
@@ -60,7 +62,7 @@ def test_delete_original_file_keeps_remaining_supplement_and_invalidates_all_pro
     assert restored["request"] == changed["request"]
 
 
-@pytest.mark.parametrize("document_id,status", [("missing", 404), ("d1", 400), ("", 400)])
+@pytest.mark.parametrize(("document_id", "status"), [("missing", 404), ("d1", 400), ("", 400)])
 def test_invalid_delete_does_not_change_session(environment, document_id, status):
     client, settings, _, _ = environment
     session = create(client)

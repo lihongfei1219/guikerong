@@ -1,0 +1,29 @@
+# Copy to config.yaml. Real config.yaml is ignored by Git.
+# Process environment overrides YAML; finance.env is no longer loaded at startup.
+# No ${VAR} expansion. Application options are mapped to the shared Mindforge runtime.
+finance_provider: ark
+finance:
+  environment: development
+  match_timeout_seconds: 300
+lazy_loading: true
+sources:
+  finance:
+    api_key: ""
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+    models:
+      matching: ""
+    timeout: 60
+    active: false
+    # Application retry count; the SDK's own retry remains disabled.
+    max_retries: 1
+    concurrency: 8
+    max_completion_tokens: 4096
+    max_prompt_characters: 200000
+    thinking: disabled
+    max_products: 100
+prompts:
+  prompt_root: prompts/templates
+  prompt_suffix_file: prompts/suffix.yaml
+session:
+  memory_cache_num: 0
+  cache_policy: LRU

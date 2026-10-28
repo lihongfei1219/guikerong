@@ -3,22 +3,25 @@ from copy import deepcopy
 
 import pytest
 
-from app.knowledge_matching import match_condition, matching_knowledge
+from guikerong_finance.service.knowledge_matching import match_condition, matching_knowledge
 from tests.test_harness import create, draft, environment, match, publish, sample_catalog
 
 __all__ = ["environment"]
 
 
-@pytest.mark.parametrize("query,conditions,expected", [
-    ("知识产权", "企业成立满一年；拥有I类知识产权", "拥有I类知识产权"),
-    ("Ｉ 类 知识产权！", "企业成立满一年；拥有Ⅰ类知识产权", "拥有Ⅰ类知识产权"),
-    ("拥有一类知识产权", "企业成立满一年；拥有I类知识产权", "拥有I类知识产权"),
-    ("拥有I类知识产全", "企业成立满一年；拥有I类知识产权", "拥有I类知识产权"),
-    ("贷款期限", "企业成立满一年；拥有I类知识产权", None),
-    ("!!!", "企业成立满一年", None),
-    ("企", "企业成立满一年", None),
-    ("知识产权", "", None),
-])
+@pytest.mark.parametrize(
+    ("query", "conditions", "expected"),
+    [
+        ("知识产权", "企业成立满一年；拥有I类知识产权", "拥有I类知识产权"),
+        ("Ｉ 类 知识产权！", "企业成立满一年；拥有Ⅰ类知识产权", "拥有Ⅰ类知识产权"),
+        ("拥有一类知识产权", "企业成立满一年；拥有I类知识产权", "拥有I类知识产权"),
+        ("拥有I类知识产全", "企业成立满一年；拥有I类知识产权", "拥有I类知识产权"),
+        ("贷款期限", "企业成立满一年；拥有I类知识产权", None),
+        ("!!!", "企业成立满一年", None),
+        ("企", "企业成立满一年", None),
+        ("知识产权", "", None),
+    ],
+)
 def test_condition_matching_supports_keywords_and_approximate_text(query, conditions, expected):
     assert match_condition(query, conditions) == expected
 
@@ -59,16 +62,25 @@ def test_product_scope_and_matching_do_not_mutate_saved_knowledge():
     item = {"product_id": "p1", "condition_quote": "知识产权", "content": "完整解释"}
     before = deepcopy(item)
     assert matching_knowledge(item, catalog.products[1]) is None
-    assert matching_knowledge(item, catalog.products[0])["content"] == item["content"]
+    matched = matching_knowledge(item, catalog.products[0])
+    assert matched is not None
+    assert matched["content"] == item["content"]
     assert item == before
 
 
-@pytest.mark.parametrize("product_id,query", [("p1", "贷款期限"), (None, "贷款期限"),
-                                             ("missing", "知识产权"), ("p1", "")])
+@pytest.mark.parametrize(
+    ("product_id", "query"), [("p1", "贷款期限"), (None, "贷款期限"), ("missing", "知识产权"), ("p1", "")]
+)
 def test_unmatched_or_invalid_scope_does_not_save_knowledge(environment, product_id, query):
     client, _, _, _ = environment
-    response = client.post("/api/v1/knowledge", json={
-        "title": "解释", "content": "完整解释", "product_id": product_id, "condition_quote": query,
-    })
+    response = client.post(
+        "/api/v1/knowledge",
+        json={
+            "title": "解释",
+            "content": "完整解释",
+            "product_id": product_id,
+            "condition_quote": query,
+        },
+    )
     assert response.status_code == 400
     assert client.get("/api/v1/knowledge").json()["items"] == []

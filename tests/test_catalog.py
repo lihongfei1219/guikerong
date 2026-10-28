@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from app.catalog import CUSTOMER_COLUMN, load_catalog
-from app.errors import DomainError
+from guikerong_finance.errors import DomainError
+from guikerong_finance.service.catalog import CUSTOMER_COLUMN, load_catalog
 
 ROOT = Path(__file__).resolve().parents[1]
 CSV = ROOT / "科技金融产品.csv"
@@ -13,10 +13,13 @@ CSV = ROOT / "科技金融产品.csv"
 
 def source_row(**updates):
     row = {
-        "产品名称": "测试产品", "机构名称": "测试银行",
+        "产品名称": "测试产品",
+        "机构名称": "测试银行",
         "详情URL": "https://guikerong.com/#/portal/financial-services/product/1234567890123456789",
-        "产品介绍": "面向科技企业提供融资。", "申请条件": "成立满1年；经营合法合规",
-        CUSTOMER_COLUMN: "科技型企业", "综合利率": "以实际审批为准",
+        "产品介绍": "面向科技企业提供融资。",
+        "申请条件": "成立满1年；经营合法合规",
+        CUSTOMER_COLUMN: "科技型企业",
+        "综合利率": "以实际审批为准",
     }
     row.update(updates)
     return row
@@ -29,12 +32,6 @@ def save_csv(tmp_path, rows):
         writer.writeheader()
         writer.writerows(rows)
     return path
-
-
-
-
-
-
 
 
 def test_real_snapshot_includes_all_products():
@@ -81,6 +78,7 @@ def test_same_id_conflict_is_quarantined_and_retains_both_versions(tmp_path):
     product = catalog.products[0]
     assert product.product_id == "1234567890123456789"
     assert product.availability_status == "UNAVAILABLE"
+    assert product.unavailable_reason is not None
     assert "内容冲突" in product.unavailable_reason
     assert len(json.loads(product.raw_fields["_source_records_json"])) == 2
 
@@ -89,6 +87,7 @@ def test_same_id_conflict_is_quarantined_and_retains_both_versions(tmp_path):
 def test_missing_required_cell_is_unavailable(tmp_path, column):
     product = load_catalog(save_csv(tmp_path, [source_row(**{column: ""})])).products[0]
     assert product.availability_status == "UNAVAILABLE"
+    assert product.unavailable_reason is not None
     assert column in product.unavailable_reason
 
 
@@ -149,8 +148,6 @@ def test_raw_catalog_retains_all_fields_without_injecting_conditions(tmp_path):
     assert catalog.warnings == []
 
 
-
-
 def test_raw_product_cells_keep_original_whitespace(tmp_path):
     row = source_row(申请条件="  成立满1年；经营合法合规\r\n", 产品介绍="\n  面向科技企业提供融资。  ")
     row["综合利率"] = "  以实际审批为准  "
@@ -160,20 +157,6 @@ def test_raw_product_cells_keep_original_whitespace(tmp_path):
     assert product.application_conditions == row["申请条件"]
     assert product.introduction == row["产品介绍"]
     assert product.applicable_customers == row[CUSTOMER_COLUMN]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def test_missing_required_header_fails_import(tmp_path):

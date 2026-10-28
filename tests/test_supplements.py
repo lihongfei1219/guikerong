@@ -6,12 +6,12 @@ from copy import deepcopy
 import httpx
 import pytest
 
-from app.ark_client import ArkClient
-from app.cloud_matching import build_messages, build_repair_messages, validate_assessment
-from app.errors import DomainError
-from app.harness import FinancialHarness
-from app.harness_store import EventStore
-from app.models import Document, HumanSupplement
+from guikerong_finance.db.events import EventStore
+from guikerong_finance.errors import DomainError
+from guikerong_finance.models.domain import Document, HumanSupplement
+from guikerong_finance.service.ark_client import ArkClient
+from guikerong_finance.service.cloud_matching import build_messages, build_repair_messages, validate_assessment
+from guikerong_finance.service.harness import FinancialHarness
 from tests.test_cloud_matching import TODAY, case
 from tests.test_harness import create, environment, match, provider_response, sample_catalog
 
@@ -23,21 +23,41 @@ def details(**updates):
 
 
 def supplement(client, session, *, metadata=None, text="本次贷款期限为3年。", identifier="s1"):
-    return client.post(f"/api/v1/sessions/{session['id']}/documents", json={
-        "expected_version": session["version"], "supplement": metadata if metadata is not None else details(),
-        "documents": [{"document_id": identifier, "filename": "人工补充.md", "content": text}]})
+    return client.post(
+        f"/api/v1/sessions/{session['id']}/documents",
+        json={
+            "expected_version": session["version"],
+            "supplement": metadata if metadata is not None else details(),
+            "documents": [{"document_id": identifier, "filename": "人工补充.md", "content": text}],
+        },
+    )
 
 
 def supplemented_case(**updates):
     product, request, payload = case()
-    info = HumanSupplement.model_validate({**details(), "recorded_at": "2026-01-01T12:00:00+08:00",
-        "application_conditions": product.application_conditions, "condition_quote": "营业收入不低于100元", **updates})
-    request.documents.append(Document(document_id="s1", filename="核实.md", content="已核实营业收入为150元。",
-                                      human_supplement=info))
+    info = HumanSupplement.model_validate(
+        {
+            **details(),
+            "recorded_at": "2026-01-01T12:00:00+08:00",
+            "application_conditions": product.application_conditions,
+            "condition_quote": "营业收入不低于100元",
+            **updates,
+        }
+    )
+    request.documents.append(
+        Document(document_id="s1", filename="核实.md", content="已核实营业收入为150元。", human_supplement=info)
+    )
     payload["conditions"][0]["citations"] = [{"document_id": "s1", "quote": "已核实营业收入为150元。"}]
     payload["eligibility"]["citations"] = deepcopy(payload["conditions"][0]["citations"])
-    payload["supplement_feedback"] = [{"document_id": "s1", "status": "ADOPTED", "reason": "已核对补充依据。",
-        "impact": "收入满足下限，其他条件仍须独立判断。", "condition_ids": ["revenue"]}]
+    payload["supplement_feedback"] = [
+        {
+            "document_id": "s1",
+            "status": "ADOPTED",
+            "reason": "已核对补充依据。",
+            "impact": "收入满足下限，其他条件仍须独立判断。",
+            "condition_ids": ["revenue"],
+        }
+    ]
     return product, request, payload
 
 
@@ -49,7 +69,8 @@ def test_simplified_supplement_saves_and_matches_without_provenance_fields(envir
     assert response.status_code == 200, response.text
     updated = response.json()
     info = updated["request"]["documents"][-1]["human_supplement"]
-    assert info["verification"] == verification and not info["legacy"]
+    assert info["verification"] == verification
+    assert not info["legacy"]
     assert not {"author", "source", "fact_date"} & info.keys()
     assert info["recorded_at"]
     restored = client.get(f"/api/v1/sessions/{session['id']}").json()
@@ -69,9 +90,10 @@ def test_metadata_persists_scoped_input_only_invalidates_one_product(environment
     updated = response.json()
     assert updated["result_counts"] == {"total": 2, "current": 1, "stale": 1}
     info = updated["request"]["documents"][-1]["human_supplement"]
-    assert info["verification"] == "CONFIRMED" and info["recorded_at"]
+    assert info["verification"] == "CONFIRMED"
+    assert info["recorded_at"]
     assert info["application_conditions"] == sample_catalog().products[0].application_conditions
-    assert EventStore(settings.harness_db_path).read(first["id"])[:len(before)] == before
+    assert EventStore(settings.harness_db_path).read(first["id"])[: len(before)] == before
     restored = FinancialHarness(settings, EventStore(settings.harness_db_path)).session(first["id"], sample_catalog())
     assert restored["request"] == updated["request"]
     matched = match(client, updated)
@@ -85,7 +107,9 @@ def test_metadata_persists_scoped_input_only_invalidates_one_product(environment
         assert feedback["status"] == ("NOT_REPORTED" if product["product_id"] == "p1" else "OUT_OF_SCOPE")
 
 
-@pytest.mark.parametrize("field,value", [("author", "旧录入人"), ("source", "旧来源"), ("fact_date", "2026-01-01")])
+@pytest.mark.parametrize(
+    ("field", "value"), [("author", "旧录入人"), ("source", "旧来源"), ("fact_date", "2026-01-01")]
+)
 def test_removed_fields_are_not_accepted_by_supplement_api(environment, field, value):
     client, _, _, _ = environment
     session = create(client)
@@ -126,13 +150,17 @@ def test_retired_supplement_fields_are_ignored_in_saved_sessions_and_history(env
     assert not retired.keys() & context["human_supplements"][0]["human_supplement"].keys()
 
 
-@pytest.mark.parametrize("metadata", [
-    details(product_id="missing"), details(condition_quote="不存在的条款"),
-    details(product_id=None, condition_quote="企业成立满一年"),
-    details(kind="CORRECTION"),
-    details(kind="CORRECTION", corrects_document_id="d1", corrects_quote="不存在的旧事实"),
-    details(kind="CORRECTION", corrects_document_id="other-session-doc", corrects_quote="旧事实"),
-])
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        details(product_id="missing"),
+        details(condition_quote="不存在的条款"),
+        details(product_id=None, condition_quote="企业成立满一年"),
+        details(kind="CORRECTION"),
+        details(kind="CORRECTION", corrects_document_id="d1", corrects_quote="不存在的旧事实"),
+        details(kind="CORRECTION", corrects_document_id="other-session-doc", corrects_quote="旧事实"),
+    ],
+)
 def test_invalid_scope_and_correction_do_not_write(environment, metadata):
     client, _, _, _ = environment
     session = create(client)
@@ -151,7 +179,8 @@ def test_old_events_gain_provenance_without_rewriting_saved_snapshots(environmen
     before = store.read(session["id"])
     restored = client.get(f"/api/v1/sessions/{session['id']}").json()
     info = restored["request"]["documents"][-1]["human_supplement"]
-    assert info["legacy"] and info["verification"] == "UNVERIFIED"
+    assert info["legacy"]
+    assert info["verification"] == "UNVERIFIED"
     assert store.read(session["id"]) == before
 
 
@@ -176,10 +205,15 @@ def test_confirmed_adoption_must_have_condition_citations_and_keeps_qualificatio
     assessment = validate_assessment(payload, product, request, TODAY)
     assert assessment.eligibility.status == "PASS"
     assert assessment.supplement_feedback[0].status == "ADOPTED"
-    payload["eligibility"].update(status="UNKNOWN", requires_human_verification=True,
-        verification_needs=["MATERIAL_CONFIRMATION"], explanation="贷款期限尚未确认。")
+    payload["eligibility"].update(
+        status="UNKNOWN",
+        requires_human_verification=True,
+        verification_needs=["MATERIAL_CONFIRMATION"],
+        explanation="贷款期限尚未确认。",
+    )
     assessment = validate_assessment(payload, product, request, TODAY)
-    assert assessment.eligibility.status == "UNKNOWN" and assessment.supplement_feedback[0].status == "ADOPTED"
+    assert assessment.eligibility.status == "UNKNOWN"
+    assert assessment.supplement_feedback[0].status == "ADOPTED"
 
 
 @pytest.mark.parametrize("change", ["missing", "unknown-id", "uncited", "wrong-clause", "no-impact", "unverified"])
@@ -209,8 +243,9 @@ def test_not_used_requires_reason_but_does_not_force_unknown_if_independent_evid
     _, _, original = case()
     payload["conditions"] = original["conditions"]
     payload["eligibility"] = original["eligibility"]
-    payload["supplement_feedback"][0].update(status="NOT_USED", reason="未核实的补充不作为依据，原始材料已独立证明。",
-                                            condition_ids=[], impact="")
+    payload["supplement_feedback"][0].update(
+        status="NOT_USED", reason="未核实的补充不作为依据，原始材料已独立证明。", condition_ids=[], impact=""
+    )
     assessment = validate_assessment(payload, product, request, TODAY)
     assert assessment.eligibility.status == "PASS"
 
@@ -220,7 +255,8 @@ def test_feedback_conflict_cannot_coexist_with_definite_condition(status):
     product, request, payload = supplemented_case()
     payload["supplement_feedback"][0].update(status=status, reason="该事实仍需核对。")
     assessment = validate_assessment(payload, product, request, TODAY)
-    assert assessment.conditions[0].status == "UNKNOWN" and assessment.eligibility.status == "UNKNOWN"
+    assert assessment.conditions[0].status == "UNKNOWN"
+    assert assessment.eligibility.status == "UNKNOWN"
 
 
 def test_out_of_scope_or_changed_conditions_are_not_sent_or_citable():
@@ -248,15 +284,26 @@ def test_adoption_feedback_and_input_snapshot_persist_through_api_and_history(en
         payload["supplement_feedback"] = []
         for doc in supplements:
             payload["conditions"][0]["citations"].append({"document_id": doc["document_id"], "quote": doc["content"]})
-            payload["supplement_feedback"].append({"document_id": doc["document_id"], "status": "ADOPTED",
-                "reason": "采用人工核实的经营信息。", "impact": "支持成立年限判断；知识产权仍待核验。", "condition_ids": ["age"]})
+            payload["supplement_feedback"].append(
+                {
+                    "document_id": doc["document_id"],
+                    "status": "ADOPTED",
+                    "reason": "采用人工核实的经营信息。",
+                    "impact": "支持成立年限判断；知识产权仍待核验。",
+                    "condition_ids": ["age"],
+                }
+            )
         envelope["choices"][0]["message"]["content"] = json.dumps(payload, ensure_ascii=False)
         return httpx.Response(200, json=envelope)
 
-    monkeypatch.setattr("app.service.ArkClient", lambda config: ArkClient(config, transport=httpx.MockTransport(handler)))
+    monkeypatch.setattr(
+        "guikerong_finance.service.matching.ArkClient",
+        lambda config: ArkClient(config, transport=httpx.MockTransport(handler)),
+    )
     first = match(client, create(client))
-    session = supplement(client, first, text="已核实企业实际经营5年。",
-                         metadata=details(condition_quote="企业成立满一年")).json()
+    session = supplement(
+        client, first, text="已核实企业实际经营5年。", metadata=details(condition_quote="企业成立满一年")
+    ).json()
     second = match(client, session, ["p1"])
     p1 = next(p for p in second["effective_matches"] if p["product_id"] == "p1")
     assert p1["model_assessment"]["supplement_feedback"][0]["status"] == "ADOPTED"

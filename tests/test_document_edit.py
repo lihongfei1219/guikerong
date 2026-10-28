@@ -3,7 +3,7 @@ from copy import deepcopy
 
 import pytest
 
-from app.harness_store import EventStore
+from guikerong_finance.db.events import EventStore
 from tests.test_harness import create, environment, match
 from tests.test_supplements import supplement
 
@@ -11,8 +11,10 @@ __all__ = ["environment"]
 
 
 def edit(client, session, content, document_id="d1"):
-    return client.post(f"/api/v1/sessions/{session['id']}/documents/edit", json={
-        "expected_version": session["version"], "document_id": document_id, "content": content})
+    return client.post(
+        f"/api/v1/sessions/{session['id']}/documents/edit",
+        json={"expected_version": session["version"], "document_id": document_id, "content": content},
+    )
 
 
 def test_edit_replaces_full_content_preserves_history_and_uses_new_model_input(environment):
@@ -27,7 +29,7 @@ def test_edit_replaces_full_content_preserves_history_and_uses_new_model_input(e
     assert updated["request"]["documents"] == [{**original, "content": content}]
     assert updated["result_counts"] == {"total": 2, "current": 0, "stale": 2}
     assert all(not p["can_review"] for p in updated["effective_matches"])
-    assert EventStore(settings.harness_db_path).read(first["id"])[:len(before)] == before
+    assert EventStore(settings.harness_db_path).read(first["id"])[: len(before)] == before
     assert client.get(f"/api/v1/sessions/{first['id']}").json()["request"] == updated["request"]
     historical = client.get(f"/api/v1/sessions/{first['id']}/runs/{first['run']['id']}").json()
     assert historical["snapshot"]["request"]["documents"] == [original]
@@ -57,10 +59,16 @@ def test_edit_scoped_supplement_keeps_scope_and_does_not_add_document(environmen
     assert appended["request"]["documents"][1]["content"] == "本次贷款期限为2年。"
 
 
-@pytest.mark.parametrize("content,document_id,status", [
-    ("", "d1", 400), (" \n\t", "d1", 400), ("内容", "missing", 404),
-    ("x" * (1024 * 1024 + 1), "d1", 413),
-], ids=["empty", "whitespace", "missing-file", "oversized"])
+@pytest.mark.parametrize(
+    ("content", "document_id", "status"),
+    [
+        ("", "d1", 400),
+        (" \n\t", "d1", 400),
+        ("内容", "missing", 404),
+        ("x" * (1024 * 1024 + 1), "d1", 413),
+    ],
+    ids=["empty", "whitespace", "missing-file", "oversized"],
+)
 def test_invalid_edit_does_not_change_saved_file(environment, content, document_id, status):
     client, _, _, _ = environment
     session = create(client)

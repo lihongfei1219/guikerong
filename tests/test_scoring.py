@@ -2,29 +2,42 @@
 
 import pytest
 
-from app.models import ConditionResult, EvaluationResult, Status
-from app.scoring import calculate_match_score
+from guikerong_finance.models.domain import ConditionResult, EvaluationResult, Status
+from guikerong_finance.service.scoring import calculate_match_score
 
 
 def evaluation(statuses, overall="UNKNOWN"):
     return EvaluationResult(
-        status=overall, logic_expression="模型综合判断", explanation="总体资格与条件匹配度分别展示。",
-        condition_results=[ConditionResult(
-            condition_id=f"c{index}", source_field="application_conditions", source_quote=f"条件{index}",
-            subject_id="company", status=status, reason_code="MODEL_JUDGEMENT", explanation=f"该项为{status}。",
-        ) for index, status in enumerate(statuses)],
+        status=overall,
+        logic_expression="模型综合判断",
+        explanation="总体资格与条件匹配度分别展示。",
+        condition_results=[
+            ConditionResult(
+                condition_id=f"c{index}",
+                source_field="application_conditions",
+                source_quote=f"条件{index}",
+                subject_id="company",
+                status=status,
+                reason_code="MODEL_JUDGEMENT",
+                explanation=f"该项为{status}。",
+            )
+            for index, status in enumerate(statuses)
+        ],
     )
 
 
-@pytest.mark.parametrize("statuses,expected_score,matched,unmatched,unknown", [
-    (["PASS", "PASS", "PASS", "FAIL", "UNKNOWN"], 60.0, 3, 1, 1),
-    (["PASS", "FAIL", "UNKNOWN"], 33.3, 1, 1, 1),
-    (["PASS", "PASS", "UNKNOWN"], 66.7, 2, 0, 1),
-    (["PASS", "PASS", "PASS"], 100.0, 3, 0, 0),
-    (["FAIL", "FAIL"], 0.0, 0, 2, 0),
-    (["UNKNOWN", "UNKNOWN"], 0.0, 0, 0, 2),
-    ([], 0.0, 0, 0, 0),
-])
+@pytest.mark.parametrize(
+    ("statuses", "expected_score", "matched", "unmatched", "unknown"),
+    [
+        (["PASS", "PASS", "PASS", "FAIL", "UNKNOWN"], 60.0, 3, 1, 1),
+        (["PASS", "FAIL", "UNKNOWN"], 33.3, 1, 1, 1),
+        (["PASS", "PASS", "UNKNOWN"], 66.7, 2, 0, 1),
+        (["PASS", "PASS", "PASS"], 100.0, 3, 0, 0),
+        (["FAIL", "FAIL"], 0.0, 0, 2, 0),
+        (["UNKNOWN", "UNKNOWN"], 0.0, 0, 0, 2),
+        ([], 0.0, 0, 0, 0),
+    ],
+)
 def test_equal_weight_score_and_breakdown(statuses, expected_score, matched, unmatched, unknown):
     value = evaluation(statuses, overall="FAIL")
     score, breakdown = calculate_match_score(value)
@@ -40,7 +53,9 @@ def test_equal_weight_score_and_breakdown(statuses, expected_score, matched, unm
         assert condition.score_contribution == pytest.approx(points if status == "PASS" else 0)
         assert condition.score_deduction == pytest.approx(0 if status == "PASS" else points)
     if statuses:
-        assert sum(item.score_contribution + item.score_deduction for item in value.condition_results) == pytest.approx(100)
+        assert sum(
+            item.score_contribution + item.score_deduction for item in value.condition_results
+        ) == pytest.approx(100)
     assert value.status == "FAIL"
 
 

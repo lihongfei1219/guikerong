@@ -1,29 +1,33 @@
 from fastapi.testclient import TestClient
 from test_harness import request_body, sample_catalog
 
-from app.config import Settings
-from app.main import create_app
+from guikerong_finance.application import create_app
+from guikerong_finance.config import Settings
 
 
 def test_workspace_asset_urls_change_when_asset_content_changes(tmp_path, monkeypatch):
     import re
     from pathlib import Path
 
-    import app.main
+    import guikerong_finance.application
 
     static = tmp_path / "static"
     static.mkdir()
     for name in ("chat.html", "chat.js", "chat.css"):
-        (static / name).write_bytes((Path(app.main.STATIC_DIR) / name).read_bytes())
-    monkeypatch.setattr(app.main, "STATIC_DIR", static)
+        (static / name).write_bytes((Path(guikerong_finance.application.STATIC_DIR) / name).read_bytes())
+    monkeypatch.setattr(guikerong_finance.application, "STATIC_DIR", static)
     with TestClient(create_app(Settings(harness_db_path=tmp_path / "cache.sqlite3"), sample_catalog())) as client:
         before = client.get("/")
         assert before.headers["cache-control"] == "no-store"
-        script = re.search(r'src="(/assets/chat.js\?v=[a-f0-9]+)"', before.text).group(1)
+        found = re.search(r'src="(/assets/chat.js\?v=[a-f0-9]+)"', before.text)
+        assert found is not None
+        script = found.group(1)
         assert client.get(script).status_code == 200
         (static / "chat.js").write_text("// new release", encoding="utf-8")
         after = client.get("/")
-        updated = re.search(r'src="(/assets/chat.js\?v=[a-f0-9]+)"', after.text).group(1)
+        found = re.search(r'src="(/assets/chat.js\?v=[a-f0-9]+)"', after.text)
+        assert found is not None
+        updated = found.group(1)
         assert updated != script
         assert client.get(updated).text == "// new release"
 
@@ -32,12 +36,14 @@ def test_only_chat_routes_and_assets_remain(tmp_path):
     with TestClient(create_app(Settings(harness_db_path=tmp_path / "chat.sqlite3"), sample_catalog())) as client:
         assert client.get("/").text == client.get("/chat").text
         assert "金融匹配助手" in client.get("/").text
-        paths = client.get("/openapi.json").json()["paths"]
+        from framex.consts import OPENAPI_URL
+
+        paths = client.get(OPENAPI_URL).json()["paths"]
         assert "/api/v1/sessions/{identifier}/match/stream" in paths
         for path in ("/api/v1/financial-products/match", "/api/v1/financial-products/match/stream"):
             assert path not in paths
             assert client.post(path, json=request_body()).status_code == 404
-        for path in ("/assets/app.js", "/assets/app.css", "/assets/index.html"):
+        for path in ("/assets/guikerong_finance.js", "/assets/guikerong_finance.css", "/assets/index.html"):
             assert client.get(path).status_code == 404
         assert client.get("/api/v1/financial-products").status_code == 200
         created = client.post("/api/v1/sessions", json=request_body())

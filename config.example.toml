@@ -1,0 +1,11 @@
+load_plugins = []
+load_builtin_plugins = []
+
+[server]
+host = "127.0.0.1"
+port = 8000
+use_ray = false
+enable_proxy = false
+
+[sentry]
+enable = false

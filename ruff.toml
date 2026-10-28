@@ -1,0 +1,108 @@
+target-version = "py311"
+line-length = 119
+respect-gitignore = true
+exclude = [
+  ".uv-cache",
+  ".local",
+  ".bzr",
+  ".direnv",
+  ".eggs",
+  ".git",
+  ".git-rewrite",
+  ".hg",
+  ".ipynb_checkpoints",
+  ".mypy_cache",
+  ".nox",
+  ".pants.d",
+  ".pyenv",
+  ".pytest_cache",
+  ".pytype",
+  ".ruff_cache",
+  ".svn",
+  ".tox",
+  ".venv",
+  ".vscode",
+  "__pypackages__",
+  "_build",
+  "buck-out",
+  "build",
+  "dist",
+  "node_modules",
+  "site-packages",
+  ".venv",
+  ".history",
+]
+
+[lint]
+extend-select = [
+  "A",     # bad name
+  "ANN",   # flake8-annotations
+  "ARG",   # bad arguments
+  "ASYNC", # async
+  "B",     # flake8-bugbear
+  "C",     # Complexity
+  "C4",    #flake8-comprehensions
+  "E",     # PEP8 errors
+  "ERA",   # commented-out-code
+  "F",     # PEP8 formatting
+  "FLY",   # static-join-to-f-string
+  "FAST",  # FastAPI (FAST)
+  "FLY",   # static-join-to-f-string
+  "FURB",  # refurb
+  "I",     # Import sorting
+  "INP",   # flake8-no-pep420
+  "N",     # name-conventions
+  "PERF",  # Perflint
+  "PIE",   # Improper comments
+  "PTH",   # use-pathlib
+  "PT",    # pytest
+  "RET",   # unnecessary-return
+  "RUF",   # specific rules
+  "S",     # flake8-bandit
+  "SIM",   # simplify
+  "T10",   # debug found
+  "T201",  # print found
+  "TID",   # tidy-imports
+  "UP",    # Pyupgrade upgrades
+  "W",     # PEP8 warnings
+]
+
+ignore = [
+  "B008",   # Do not perform function calls in argument defaults
+  "B009",   # get-attr-with-constant
+  "B010",   # set-attr-with-constant
+  "ERA001",
+  "C901",
+  "E402",   # Module level import not at top of file
+  "ANN401", # Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`
+  "ANN204", # ANN204 Missing return type annotation for special method
+  # "ANN201", # Missing return type annotation for public function
+  "RUF003", # Comment contains ambiguous `(` `）`
+  "RUF002",# Docstring contains ambiguous `，`
+  "RET504" ,# Unnecessary assignment to `toc` before `return` statement
+  "RUF001", # String contains ambiguous `，` (FULLWIDTH COMMA). Did you mean `,` (COMMA)?
+
+  # Recoommand
+  "ANN001",
+  "ANN202",
+  "ANN201",
+  "S101",
+  "S311",
+  "SIM108",
+  "ANN003",
+  "ANN206",
+]
+
+[lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "ANN201", "ANN001"]
+
+[lint.flake8-builtins]
+builtins-ignorelist = ["input", "id", "bytes", "type"]
+
+[lint.isort]
+force-wrap-aliases = true
+combine-as-imports = true
+split-on-trailing-comma = true
+
+[lint.pydocstyle]
+convention = "numpy"

@@ -1,17 +1,81 @@
+# Temporary and binary files
+*~
+*.py[cod]
+*.so
+*.cfg
+!setup.cfg
+*.orig
+*.log
+*.pot
+__pycache__/*
+.cache/*
+.*.swp
+*/.ipynb_checkpoints/*
+*.pyc
+
+# Project files
+.ropeproject
+.project
+.pydevproject
+.settings
+.idea
+
+# Package files
+*.egg
+*.eggs/
+.installed.cfg
+*.egg-info
+
+# Unittest and coverage
+htmlcov/*
+.coverage
+.tox
+junit.xml
+coverage.xml
+cov.xml
+report.xml
+
+# Build and docs folder/files
+build/*
+dist/*
+sdist/*
+docs/api/*
+docs/_build/*
+docs/build/*
+cover/*
+MANIFEST
+.mypy_cache/*
+
+# Unused code
+backup/*
+
+# macOS Desktop Services Store
+.DS_Store
+
+# plots
+*.png
+
+# Python virtual environment
+venv/*
+
+# Disable upload .env
+.env
+finance.env
+
+.history
+cache
+
+
+# plugin config
+config.toml
+config.yaml
+**/mindforge.yaml
+
 .venv/
 .uv-cache/
+.local/
 .pytest_cache/
 .ruff_cache/
-__pycache__/
-*.py[cod]
-.env
-.env.*
-!.env.example
-env.txt
+.artifacts-*.log
+data/
 公司/
-outputs/
-.artifacts/
-*.log
-~$*
-data/harness.sqlite3*
-data/products.sqlite3*

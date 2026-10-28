@@ -4,12 +4,13 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import IntegrityError
 
-from app.catalog import load_catalog
-from app.catalog_store import CatalogStore
-from app.config import Settings
-from app.errors import DomainError
-from app.main import create_app
+from guikerong_finance.application import create_app
+from guikerong_finance.config import Settings
+from guikerong_finance.db.catalog import CatalogStore
+from guikerong_finance.errors import DomainError
+from guikerong_finance.service.catalog import load_catalog
 from tests.test_harness import sample_catalog
 
 
@@ -41,7 +42,8 @@ def test_idempotent_import_and_old_versions_remain_available(tmp_path):
     first = sample_catalog()
     a = store.import_catalog(first, source_name="first.csv", apply=True)
     same = store.import_catalog(first, source_name="copied.csv", apply=True)
-    assert same["changed"] is False and same["revision_id"] == a["revision_id"]
+    assert same["changed"] is False
+    assert same["revision_id"] == a["revision_id"]
     second = first.model_copy(deep=True)
     second.products[0].application_conditions += "；其他要求"
     b = store.import_catalog(second, source_name="second.csv", apply=True)
@@ -49,10 +51,13 @@ def test_idempotent_import_and_old_versions_remain_available(tmp_path):
     assert store.load() == second
     with sqlite3.connect(store.path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM catalog_revisions").fetchone()[0] == 2
-        old = connection.execute("SELECT application_conditions FROM products WHERE revision_id=? AND position=0", (a["revision_id"],)).fetchone()[0]
+        old = connection.execute(
+            "SELECT application_conditions FROM products WHERE revision_id=? AND position=0", (a["revision_id"],)
+        ).fetchone()[0]
         assert old == first.products[0].application_conditions
     restored = store.import_catalog(first, source_name="first.csv", apply=True)
-    assert restored["revision_id"] == a["revision_id"] and restored["changed"]
+    assert restored["revision_id"] == a["revision_id"]
+    assert restored["changed"]
     assert store.load() == first
 
 
@@ -61,10 +66,13 @@ def test_failed_insert_rolls_back_revision_products_and_active_pointer(tmp_path)
     first = sample_catalog()
     store.import_catalog(first, source_name="first.csv", apply=True)
     with sqlite3.connect(store.path) as connection:
-        connection.execute("CREATE TRIGGER reject_update BEFORE INSERT ON products WHEN NEW.product_name='FAIL_INSERT' BEGIN SELECT RAISE(ABORT,'simulated failure'); END")
+        connection.execute(
+            "CREATE TRIGGER reject_update BEFORE INSERT ON products WHEN NEW.product_name='FAIL_INSERT' "
+            "BEGIN SELECT RAISE(ABORT,'simulated failure'); END"
+        )
     updated = first.model_copy(deep=True)
     updated.products[1].product_name = "FAIL_INSERT"
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(IntegrityError):
         store.import_catalog(updated, source_name="second.csv", apply=True)
     assert store.load() == first
     with sqlite3.connect(store.path) as connection:
@@ -106,8 +114,12 @@ def test_legacy_row_id_cannot_silently_change_identity(tmp_path, change):
 
 
 def test_database_runtime_ignores_missing_csv_and_sees_atomic_new_version(tmp_path):
-    settings = replace(Settings(), catalog_db_path=tmp_path / "products.sqlite3",
-                       csv_path=tmp_path / "not-present.csv", harness_db_path=tmp_path / "sessions.sqlite3")
+    settings = replace(
+        Settings(),
+        catalog_db_path=tmp_path / "products.sqlite3",
+        csv_path=tmp_path / "not-present.csv",
+        harness_db_path=tmp_path / "sessions.sqlite3",
+    )
     store = CatalogStore(settings.catalog_db_path)
     first = sample_catalog()
     store.import_catalog(first, source_name="first.csv", apply=True)
@@ -123,8 +135,9 @@ def test_database_runtime_ignores_missing_csv_and_sees_atomic_new_version(tmp_pa
 
 
 def test_empty_db_degrades_then_recovers_after_explicit_import_without_restart(tmp_path):
-    settings = replace(Settings(), catalog_db_path=tmp_path / "products.sqlite3",
-                       harness_db_path=tmp_path / "sessions.sqlite3")
+    settings = replace(
+        Settings(), catalog_db_path=tmp_path / "products.sqlite3", harness_db_path=tmp_path / "sessions.sqlite3"
+    )
     with TestClient(create_app(settings)) as client:
         assert client.get("/").status_code == 200
         assert client.get("/health").status_code == 503

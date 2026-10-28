@@ -4,9 +4,9 @@ import json
 import pytest
 from test_harness import request_body, sample_catalog
 
-from app.config import Settings
-from app.main import create_app
-from app.models import MatchRequest
+from guikerong_finance.application import create_app
+from guikerong_finance.config import Settings
+from guikerong_finance.models.domain import MatchRequest
 
 
 @pytest.mark.parametrize("spec_version", ["2.0", "2.4"])
@@ -14,10 +14,12 @@ from app.models import MatchRequest
 def test_disconnect_cancels_and_drains_worker(tmp_path, spec_version, disconnect_kind):
     async def run():
         worker_started, worker_drained, chunk_sent = asyncio.Event(), asyncio.Event(), asyncio.Event()
-        messages = asyncio.Queue()
-        messages.put_nowait({"type": "http.request", "body": json.dumps({"expected_version": 1}).encode(), "more_body": False})
+        messages: asyncio.Queue[dict] = asyncio.Queue()
+        messages.put_nowait(
+            {"type": "http.request", "body": json.dumps({"expected_version": 1}).encode(), "more_body": False}
+        )
 
-        async def waiting(*args, on_progress, **kwargs):
+        async def waiting(*_args: object, on_progress, **_kwargs):
             worker_started.set()
             on_progress({"type": "product", "product_id": "p1", "status": "running"})
             try:
@@ -39,11 +41,18 @@ def test_disconnect_cancels_and_drains_worker(tmp_path, spec_version, disconnect
         session = application.state.harness.create(MatchRequest.model_validate(request_body()))
         stream_path = f"/api/v1/sessions/{session['id']}/match/stream"
         scope = {
-            "type": "http", "asgi": {"version": "3.0", "spec_version": spec_version},
-            "http_version": "1.1", "method": "POST", "scheme": "http", "path": stream_path,
-            "raw_path": stream_path.encode(), "query_string": b"", "root_path": "",
+            "type": "http",
+            "asgi": {"version": "3.0", "spec_version": spec_version},
+            "http_version": "1.1",
+            "method": "POST",
+            "scheme": "http",
+            "path": stream_path,
+            "raw_path": stream_path.encode(),
+            "query_string": b"",
+            "root_path": "",
             "headers": [(b"content-type", b"application/json")],
-            "client": ("127.0.0.1", 12345), "server": ("testserver", 80),
+            "client": ("127.0.0.1", 12345),
+            "server": ("testserver", 80),
         }
         async with application.router.lifespan_context(application):
             task = asyncio.create_task(application(scope, messages.get, send))
@@ -56,8 +65,12 @@ def test_disconnect_cancels_and_drains_worker(tmp_path, spec_version, disconnect
                 await asyncio.wait_for(task, timeout=1)
         assert worker_started.is_set()
         assert worker_drained.is_set()
-        assert not [task for task in asyncio.all_tasks()
-                    if task is not asyncio.current_task() and not task.done()
-                    and task.get_name().startswith(("stream-match:", "matching-stream-"))]
+        assert not [
+            task
+            for task in asyncio.all_tasks()
+            if task is not asyncio.current_task()
+            and not task.done()
+            and task.get_name().startswith(("stream-match:", "matching-stream-"))
+        ]
 
     asyncio.run(run())

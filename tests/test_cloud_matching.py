@@ -6,7 +6,9 @@ from datetime import date, timedelta
 
 import pytest
 
-from app.cloud_matching import (
+from guikerong_finance.errors import DomainError
+from guikerong_finance.models.domain import MatchRequest, ModelCitation, Product, Status
+from guikerong_finance.service.cloud_matching import (
     MATCHING_INTERPRETATION_POLICY,
     build_messages,
     build_repair_messages,
@@ -15,41 +17,65 @@ from app.cloud_matching import (
     recover_invalid_citations,
     validate_assessment,
 )
-from app.errors import DomainError
-from app.models import MatchRequest, ModelCitation, Product, Status
 
 TODAY = date(2026, 10, 22)
 
 
 def case():
-    body = MatchRequest.model_validate({
-        "company": {"name": "申请企业"},
-        "documents": [
-            {"document_id": "d1", "filename": "自由文本.md", "source_date": "2026-10-22",
-             "content": "  申请企业\r\n主营工业包装产品设计与制造。\r\n营业收入为120元。\r\n  "},
-            {"document_id": "d2", "filename": "标题格式.md",
-             "content": "# 其他资料\n\n值：完整的附加资料\n来源：登记文件\n"},
-        ],
-    })
+    body = MatchRequest.model_validate(
+        {
+            "company": {"name": "申请企业"},
+            "documents": [
+                {
+                    "document_id": "d1",
+                    "filename": "自由文本.md",
+                    "source_date": "2026-10-22",
+                    "content": "  申请企业\r\n主营工业包装产品设计与制造。\r\n营业收入为120元。\r\n  ",
+                },
+                {
+                    "document_id": "d2",
+                    "filename": "标题格式.md",
+                    "content": "# 其他资料\n\n值：完整的附加资料\n来源：登记文件\n",
+                },
+            ],
+        }
+    )
     product = Product(
-        product_id="p1", product_name="制造贷", institution="测试银行",
-        detail_url="https://example.test/p1", introduction="为生产制造企业提供经营融资。",
+        product_id="p1",
+        product_name="制造贷",
+        institution="测试银行",
+        detail_url="https://example.test/p1",
+        introduction="为生产制造企业提供经营融资。",
         application_conditions="营业收入不低于100元；主营生产制造业务",
         raw_fields={"担保方式": "支持信用贷款，也可提供抵押物。", "贷款额度": "最高500万元。"},
     )
 
     def judgement(quote):
-        return {"status": "PASS", "explanation": "企业原文支持此项判断。", "subject_id": "company",
-                "citations": [{"document_id": "d1", "quote": quote}],
-                "requires_human_verification": False, "required_material": None, "verification_needs": []}
+        return {
+            "status": "PASS",
+            "explanation": "企业原文支持此项判断。",
+            "subject_id": "company",
+            "citations": [{"document_id": "d1", "quote": quote}],
+            "requires_human_verification": False,
+            "required_material": None,
+            "verification_needs": [],
+        }
 
     payload = {
         "eligibility": {**judgement("营业收入为120元。"), "explanation": "收入及业务均满足申请要求。"},
         "conditions": [
-            {**judgement("营业收入为120元。"), "condition_id": "revenue",
-             "source_field": "application_conditions", "source_quote": "营业收入不低于100元"},
-            {**judgement("主营工业包装产品设计与制造。"), "condition_id": "business",
-             "source_field": "application_conditions", "source_quote": "主营生产制造业务"},
+            {
+                **judgement("营业收入为120元。"),
+                "condition_id": "revenue",
+                "source_field": "application_conditions",
+                "source_quote": "营业收入不低于100元",
+            },
+            {
+                **judgement("主营工业包装产品设计与制造。"),
+                "condition_id": "business",
+                "source_field": "application_conditions",
+                "source_quote": "主营生产制造业务",
+            },
         ],
     }
     return product, body, payload
@@ -72,7 +98,8 @@ def test_overall_pass_reuses_validated_clause_citations_without_mutating_respons
     eligibility, evidence = merge_assessment(product, body, TODAY, assessment)
     assert eligibility.status == Status.PASS
     assert {evidence[eid].quote for eid in eligibility.evidence_ids} == {
-        "营业收入为120元。", "主营工业包装产品设计与制造。",
+        "营业收入为120元。",
+        "主营工业包装产品设计与制造。",
     }
     assert payload == original
 
@@ -108,23 +135,35 @@ def test_model_identifies_conditions_and_provides_overall_eligibility_without_ru
     assert eligibility.condition_results[0].source_quote == "营业收入不低于100元"
     assert eligibility.condition_results[0].field_id is None
     assert {item.quote for item in evidence.values()} >= {
-        "主营工业包装产品设计与制造。", "营业收入为120元。",
+        "主营工业包装产品设计与制造。",
+        "营业收入为120元。",
     }
     revenue = next(item for item in evidence.values() if item.quote == "营业收入为120元。")
     assert (revenue.document_id, revenue.filename, revenue.line_start, revenue.line_end) == (
-        "d1", "自由文本.md", 3, 3,
+        "d1",
+        "自由文本.md",
+        3,
+        3,
     )
 
 
-@pytest.mark.parametrize("needs", [
-    ["MATERIAL_CONFIRMATION"], ["PROFESSIONAL_REVIEW"],
-    ["MATERIAL_CONFIRMATION", "PROFESSIONAL_REVIEW"],
-])
+@pytest.mark.parametrize(
+    "needs",
+    [
+        ["MATERIAL_CONFIRMATION"],
+        ["PROFESSIONAL_REVIEW"],
+        ["MATERIAL_CONFIRMATION", "PROFESSIONAL_REVIEW"],
+    ],
+)
 def test_unknown_reason_types_survive_model_validation_and_projection(needs):
     product, body, payload = case()
     for judgement in [payload["eligibility"], payload["conditions"][0]]:
-        judgement.update(status="UNKNOWN", verification_needs=needs, requires_human_verification=True,
-                         required_material="请确认具体疑点及适用口径")
+        judgement.update(
+            status="UNKNOWN",
+            verification_needs=needs,
+            requires_human_verification=True,
+            required_material="请确认具体疑点及适用口径",
+        )
     assessment = validate_assessment(payload, product, body, TODAY)
     result, _ = merge_assessment(product, body, TODAY, assessment)
     assert result.verification_needs == needs
@@ -148,7 +187,9 @@ def test_future_document_is_material_confirmation_not_professional_ambiguity():
     assert all(c.verification_needs == ["MATERIAL_CONFIRMATION"] for c in assessment.conditions)
 
 
-@pytest.mark.parametrize("damage", ["product_id", "identity", "relevance", "empty", "duplicate", "missing_source", "extra", "eligibility"])
+@pytest.mark.parametrize(
+    "damage", ["product_id", "identity", "relevance", "empty", "duplicate", "missing_source", "extra", "eligibility"]
+)
 def test_response_has_only_eligibility_and_unique_conditions(damage):
     product, body, payload = case()
     if damage in {"product_id", "identity", "relevance"}:
@@ -186,7 +227,9 @@ def test_model_can_choose_condition_ids_order_and_granularity():
     assert len(validate_assessment(payload, product, body, TODAY).conditions) == 1
 
 
-@pytest.mark.parametrize("damage", ["invented_id", "changed_quote", "empty_quote", "unknown_bad_quote", "product_quote"])
+@pytest.mark.parametrize(
+    "damage", ["invented_id", "changed_quote", "empty_quote", "unknown_bad_quote", "product_quote"]
+)
 def test_every_citation_is_checked_against_the_original_document(damage):
     product, body, payload = case()
     citation = payload["eligibility"]["citations"][0]
@@ -210,7 +253,8 @@ def test_every_citation_is_checked_against_the_original_document(damage):
         overall = validate_assessment(payload, product, body, TODAY).eligibility
         assert overall.status == Status.PASS
         assert {ref.quote for ref in overall.citations} == {
-            "营业收入为120元。", "主营工业包装产品设计与制造。",
+            "营业收入为120元。",
+            "主营工业包装产品设计与制造。",
         }
     else:
         assert_invalid(product, body, payload)
@@ -237,8 +281,10 @@ def test_unsupported_decisive_answers_require_professional_verification(section,
     assert result.required_material
     assert result.verification_needs == ["PROFESSIONAL_REVIEW"]
     if section == "eligibility":
+        assert result.required_material is not None
         assert "专业人员" in result.required_material
     else:
+        assert result.required_material is not None
         assert result.source_quote in result.required_material
         assert assessment.conditions[1].status == Status.PASS
         assert assessment.eligibility.status == Status.UNKNOWN
@@ -250,7 +296,9 @@ def test_unsupported_decisive_answers_require_professional_verification(section,
 def test_unsupported_verdict_preserves_a_specific_material_request():
     product, body, payload = case()
     payload["conditions"][0].update(
-        status="FAIL", citations=[], required_material="请补充上一完整年度的营业收入审计报告。",
+        status="FAIL",
+        citations=[],
+        required_material="请补充上一完整年度的营业收入审计报告。",
     )
     assessment = validate_assessment(payload, product, body, TODAY)
     assert assessment.conditions[0].status == Status.UNKNOWN
@@ -262,6 +310,7 @@ def test_unsupported_verdict_requests_its_original_product_condition_when_materi
     payload["conditions"][0].update(status="PASS", citations=[], required_material="  ")
     assessment = validate_assessment(payload, product, body, TODAY)
     material = assessment.conditions[0].required_material
+    assert material is not None
     assert payload["conditions"][0]["source_quote"] in material
 
 
@@ -305,7 +354,9 @@ def test_conditions_can_target_a_shareholder_when_model_identifies_a_shareholder
     product.application_conditions += "；主要股东须具备制造业经验。"
     body.documents[1].content += "申请企业主要股东张某具有十年制造业经验。"
     payload["conditions"][0].update(
-        subject_id="shareholder:zhang", source_field="申请条件", source_quote="主要股东须具备制造业经验。",
+        subject_id="shareholder:zhang",
+        source_field="申请条件",
+        source_quote="主要股东须具备制造业经验。",
         citations=[{"document_id": "d2", "quote": "申请企业主要股东张某具有十年制造业经验。"}],
     )
     assessment = validate_assessment(payload, product, body, TODAY)
@@ -366,9 +417,11 @@ def test_each_unknown_condition_preserves_its_specific_material_gap_regardless_o
     product, body, payload = case()
     payload["eligibility"]["status"] = overall
     payload["conditions"][1].update(
-        status="UNKNOWN", requires_human_verification=True,
+        status="UNKNOWN",
+        requires_human_verification=True,
         verification_needs=["MATERIAL_CONFIRMATION"],
-        explanation="资料描述主营制造，但尚需核对实际业务合同。", required_material="核对实际业务合同",
+        explanation="资料描述主营制造，但尚需核对实际业务合同。",
+        required_material="核对实际业务合同",
     )
     assessment = validate_assessment(payload, product, body, TODAY)
     eligibility, evidence = merge_assessment(product, body, TODAY, assessment)
@@ -424,21 +477,28 @@ def test_mixed_newlines_preserve_original_offsets_and_line_numbers():
     _, body, _ = case()
     body.documents[0].content = "第一行\r\n第二行\r申请企业\n主营制造\r\n最后一行"
     actual = citation_evidence(
-        ModelCitation(document_id="d1", quote="申请企业\r\n主营制造\n"), body, "company",
+        ModelCitation(document_id="d1", quote="申请企业\r\n主营制造\n"),
+        body,
+        "company",
     )
     literal = citation_evidence(
-        ModelCitation(document_id="d1", quote="申请企业\n主营制造\r\n"), body, "company",
+        ModelCitation(document_id="d1", quote="申请企业\n主营制造\r\n"),
+        body,
+        "company",
     )
     assert actual == literal
     assert actual.quote == "申请企业\n主营制造\r\n"
     assert (actual.line_start, actual.line_end) == (3, 5)
 
 
-@pytest.mark.parametrize("quote,original_quote,line_end", [
-    ("\n主营制造", "\r\n主营制造", 2),
-    ("\n主营制造\n", "\r\n主营制造\r\n", 3),
-    ("首行\r", "首行\r\n", 2),
-])
+@pytest.mark.parametrize(
+    ("quote", "original_quote", "line_end"),
+    [
+        ("\n主营制造", "\r\n主营制造", 2),
+        ("\n主营制造\n", "\r\n主营制造\r\n", 3),
+        ("首行\r", "首行\r\n", 2),
+    ],
+)
 def test_quote_boundaries_never_split_an_original_crlf(quote, original_quote, line_end):
     _, body, _ = case()
     body.documents[0].content = "首行\r\n主营制造\r\n尾行"
@@ -449,13 +509,16 @@ def test_quote_boundaries_never_split_an_original_crlf(quote, original_quote, li
     assert (actual.line_start, actual.line_end) == (1, line_end)
 
 
-@pytest.mark.parametrize("quote", [
-    "申请企业\n主营 工业包装产品设计与制造。",
-    "申请企业\n主营工业包装产品设计与制造!",
-    "申请企业\n……\n营业收入为120元。",
-    "申请企业\n营业收入为120元。",
-    "申请企业\n\n主营工业包装产品设计与制造。",
-])
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "申请企业\n主营 工业包装产品设计与制造。",
+        "申请企业\n主营工业包装产品设计与制造!",
+        "申请企业\n……\n营业收入为120元。",
+        "申请企业\n营业收入为120元。",
+        "申请企业\n\n主营工业包装产品设计与制造。",
+    ],
+)
 def test_newline_tolerance_does_not_allow_other_changes_or_joined_fragments(quote):
     product, body, payload = case()
     payload["eligibility"]["citations"][0]["quote"] = quote
@@ -476,8 +539,11 @@ def test_invalid_quote_reports_only_safe_locations():
     with pytest.raises(DomainError) as caught:
         validate_assessment(payload, product, body, TODAY)
     assert caught.value.details == {
-        "reason": "INVALID_EVIDENCE_CITATION", "product_id": "p1", "section": "conditions",
-        "condition_id": "business", "document_id": "d1",
+        "reason": "INVALID_EVIDENCE_CITATION",
+        "product_id": "p1",
+        "section": "conditions",
+        "condition_id": "business",
+        "document_id": "d1",
     }
     assert private_quote not in json.dumps(caught.value.details, ensure_ascii=False)
 
@@ -507,19 +573,24 @@ def test_invalid_document_identifier_is_redacted_from_error_details():
     with pytest.raises(DomainError) as caught:
         validate_assessment(payload, product, body, TODAY)
     assert caught.value.details == {
-        "reason": "INVALID_EVIDENCE_CITATION", "product_id": "p1", "section": "eligibility",
+        "reason": "INVALID_EVIDENCE_CITATION",
+        "product_id": "p1",
+        "section": "eligibility",
         "document_id": "<unknown_document>",
     }
     assert private_identifier not in json.dumps(caught.value.details, ensure_ascii=False)
 
 
-@pytest.mark.parametrize("statuses,overall", [
-    (["PASS", "UNKNOWN"], "PASS"),
-    (["PASS", "UNKNOWN"], "UNKNOWN"),
-    (["FAIL", "UNKNOWN"], "FAIL"),
-    (["FAIL", "UNKNOWN"], "UNKNOWN"),
-    (["PASS", "FAIL"], "PASS"),
-])
+@pytest.mark.parametrize(
+    ("statuses", "overall"),
+    [
+        (["PASS", "UNKNOWN"], "PASS"),
+        (["PASS", "UNKNOWN"], "UNKNOWN"),
+        (["FAIL", "UNKNOWN"], "FAIL"),
+        (["FAIL", "UNKNOWN"], "UNKNOWN"),
+        (["PASS", "FAIL"], "PASS"),
+    ],
+)
 def test_overall_eligibility_is_the_model_judgement_without_local_boolean_composition(statuses, overall):
     product, body, payload = case()
     payload["eligibility"]["status"] = overall
@@ -530,8 +601,6 @@ def test_overall_eligibility_is_the_model_judgement_without_local_boolean_compos
     assessment = validate_assessment(payload, product, body, TODAY)
     eligibility, _ = merge_assessment(product, body, TODAY, assessment)
     assert eligibility.status == Status(overall)
-
-
 
 
 @pytest.mark.parametrize("damage", ["unknown_field", "wrong_field", "changed_quote", "blank_quote"])
@@ -609,7 +678,8 @@ def test_complete_original_documents_are_data_without_preparsed_fields():
     assert {"facts", "profile", "evidence", "rows", "required_condition_ids"}.isdisjoint(data)
     assert attack not in messages[0]["content"]
     assert data["product"] == {
-        "product_name": product.product_name, "application_conditions": product.application_conditions,
+        "product_name": product.product_name,
+        "application_conditions": product.application_conditions,
     }
     assert data["assessment_date"] == TODAY.isoformat()
     assert set(data["response_example"]) == {"eligibility", "conditions"}
@@ -649,9 +719,17 @@ def test_prompt_preserves_full_and_or_exemption_terms_and_requests_fair_independ
 def test_initial_and_repair_prompts_interpret_existing_ip_facts_without_adding_document_gates():
     product, body, payload = case()
     initial = build_messages(product, body, TODAY)
-    repair = build_repair_messages(product, body, TODAY, payload, {
-        "reason": "OVERLAPPING_CONDITION_SOURCE", "condition_id": "child", "related_condition_id": "group",
-    })
+    repair = build_repair_messages(
+        product,
+        body,
+        TODAY,
+        payload,
+        {
+            "reason": "OVERLAPPING_CONDITION_SOURCE",
+            "condition_id": "child",
+            "related_condition_id": "group",
+        },
+    )
     for messages in (initial, repair):
         prompt = messages[0]["content"]
         assert "已授权发明专利（含国防专利）属于I类" in prompt
@@ -665,21 +743,40 @@ def test_initial_and_repair_prompts_interpret_existing_ip_facts_without_adding_d
         context = json.loads(messages[1]["content"])
         assert context["documents"] == [doc.model_dump(mode="json") for doc in body.documents]
         assert context["product"] == {
-            "product_name": product.product_name, "application_conditions": product.application_conditions,
+            "product_name": product.product_name,
+            "application_conditions": product.application_conditions,
         }
     assert json.loads(repair[1]["content"])["validation_feedback"]["related_condition_id"] == "group"
 
 
 def test_interpretation_policy_survives_repair_with_original_terms_and_knowledge():
+    from guikerong_finance.prompts.chat_context import CHAT_SYSTEM
+
     product, body, payload = case()
     product.application_conditions = "高科技企业；实际经营期限长于本次贷款期限"
     body.documents[0].content = "本企业主营软件研发，已有软件产品；经营五年，本次贷款期限尚未确定。"
     knowledge = [{"id": "k1", "content": "科技属性可结合研发活动与产品判断；不能由此推定贷款期限。"}]
     initial = build_messages(product, body, TODAY, expert_knowledge=knowledge)
-    repair = build_repair_messages(product, body, TODAY, payload, {
-        "reason": "INVALID_EVIDENCE_CITATION", "condition_id": "business",
-    }, expert_knowledge=knowledge)
-    for messages in (initial, repair):
+    repair = build_repair_messages(
+        product,
+        body,
+        TODAY,
+        payload,
+        {
+            "reason": "INVALID_EVIDENCE_CITATION",
+            "condition_id": "business",
+        },
+        expert_knowledge=knowledge,
+    )
+    continued = build_messages(
+        product,
+        body,
+        TODAY,
+        expert_knowledge=knowledge,
+        continuation={"previous_prompt_version": "product-preliminary-policy-4.5"},
+    )
+    assert CHAT_SYSTEM.count(MATCHING_INTERPRETATION_POLICY) == 1
+    for messages in (initial, repair, continued):
         prompt = messages[0]["content"]
         assert prompt.count(MATCHING_INTERPRETATION_POLICY) == 1
         assert "普通科技企业也可满足该项" in prompt
@@ -719,23 +816,37 @@ def test_both_initial_and_repair_requests_contain_only_the_two_permitted_product
     payload["unexpected_product"] = product.model_dump(mode="json")
     payload["eligibility"]["explanation"] = "LOCAL_ONLY_PREVIOUS_RESPONSE"
     excluded = [
-        product.product_id, product.institution, product.detail_url, product.introduction,
-        product.applicable_customers, *product.raw_fields, *product.raw_fields.values(),
+        product.product_id,
+        product.institution,
+        product.detail_url,
+        product.introduction,
+        product.applicable_customers,
+        *product.raw_fields,
+        *product.raw_fields.values(),
         payload["eligibility"]["explanation"],
     ]
     batches = [
         build_messages(product, body, TODAY),
-        build_repair_messages(product, body, TODAY, payload, {
-            "reason": "INVALID_SCHEMA", "product_id": product.product_id,
-            "product_name": product.product_name, "institution": product.institution,
-        }),
+        build_repair_messages(
+            product,
+            body,
+            TODAY,
+            payload,
+            {
+                "reason": "INVALID_SCHEMA",
+                "product_id": product.product_id,
+                "product_name": product.product_name,
+                "institution": product.institution,
+            },
+        ),
     ]
     for messages in batches:
         serialized = json.dumps(messages, ensure_ascii=False)
         assert all(value not in serialized for value in excluded)
         data = json.loads(messages[1]["content"])
         assert data["product"] == {
-            "product_name": product.product_name, "application_conditions": product.application_conditions,
+            "product_name": product.product_name,
+            "application_conditions": product.application_conditions,
         }
         assert data["documents"] == [document.model_dump(mode="json") for document in body.documents]
         assert "previous_response" not in data
@@ -782,8 +893,12 @@ def test_repair_prompt_preserves_complete_original_request_and_scopes_feedback_a
     payload["eligibility"]["explanation"] = attack
     previous = deepcopy(payload)
     details = {
-        "reason": "INVALID_EVIDENCE_CITATION", "product_id": "p1", "section": "eligibility",
-        "document_id": "d1", "quote": "不应复制进反馈的原文", "input": "不应复制的内部数据",
+        "reason": "INVALID_EVIDENCE_CITATION",
+        "product_id": "p1",
+        "section": "eligibility",
+        "document_id": "d1",
+        "quote": "不应复制进反馈的原文",
+        "input": "不应复制的内部数据",
     }
     original_messages = build_messages(product, body, TODAY)
     messages = build_repair_messages(product, body, TODAY, payload, details)
@@ -794,7 +909,9 @@ def test_repair_prompt_preserves_complete_original_request_and_scopes_feedback_a
     assert attack not in messages[0]["content"]
     assert "previous_response" not in repair_data
     assert repair_data.pop("validation_feedback") == {
-        "reason": "INVALID_EVIDENCE_CITATION", "section": "eligibility", "document_id": "d1",
+        "reason": "INVALID_EVIDENCE_CITATION",
+        "section": "eligibility",
+        "document_id": "d1",
     }
     assert repair_data == original_data
     assert payload == previous
@@ -854,12 +971,19 @@ def test_citation_recovery_removes_invalid_quotes_and_replaces_affected_verdicts
     assert recovered.requires_human_verification is True
     assert "模型引用无法定位，不能据此认定符合或不符合" in recovered.explanation
     assert unsupported_explanation not in recovered.explanation
-    assert "重新评估" in recovered.required_material and "核对" in recovered.required_material
+    assert recovered.required_material is not None
+    assert "重新评估" in recovered.required_material
+    assert recovered.required_material is not None
+    assert "核对" in recovered.required_material
+    assert recovered.required_material is not None
     assert "缺少营业执照" not in recovered.required_material
     assert [item.model_dump(mode="json") for item in recovered.citations] == valid_citations
     assert assessment.eligibility.status == Status.UNKNOWN
     assert payload["eligibility"]["explanation"] not in assessment.eligibility.explanation
-    assert assessment.conditions[1].model_dump(mode="json") == {**payload["conditions"][1], "assessment_basis": "EVIDENCE"}
+    assert assessment.conditions[1].model_dump(mode="json") == {
+        **payload["conditions"][1],
+        "assessment_basis": "EVIDENCE",
+    }
     assert len(warnings) == 1
     assert bad_quote not in assessment.model_dump_json()
     assert bad_quote not in " ".join(warnings)
@@ -873,14 +997,18 @@ def test_citation_recovery_removes_invalid_quotes_and_replaces_affected_verdicts
 
 def test_recovery_cleans_all_invalid_references_including_unknown_documents_and_unknown_judgements():
     product, body, payload = case()
-    secret_document_id = "secret_unknown_document"
-    secret_quote = "不可回显的错误引用"
+    secret_document_id = "secret_unknown_document"  # noqa: S105 - synthetic privacy sentinel, not a credential
+    secret_quote = "不可回显的错误引用"  # noqa: S105 - synthetic privacy sentinel, not a credential
     payload["eligibility"]["citations"] = [{"document_id": secret_document_id, "quote": "营业收入为120元。"}]
-    payload["conditions"][0].update(status="UNKNOWN", explanation="任意未经证实的说明", citations=[
-        {"document_id": "d1", "quote": secret_quote},
-        {"document_id": "d1", "quote": " "},
-        {"document_id": secret_document_id, "quote": "申请企业"},
-    ])
+    payload["conditions"][0].update(
+        status="UNKNOWN",
+        explanation="任意未经证实的说明",
+        citations=[
+            {"document_id": "d1", "quote": secret_quote},
+            {"document_id": "d1", "quote": " "},
+            {"document_id": secret_document_id, "quote": "申请企业"},
+        ],
+    )
     preserved = deepcopy(payload["conditions"][1]["citations"])
     payload["conditions"][1]["subject_id"] = "shareholder:zhang"
     payload["conditions"][1]["citations"].append({"document_id": "d2", "quote": "营业收入为120元。"})
@@ -914,14 +1042,17 @@ def test_recovery_is_idempotent_and_cannot_promote_a_downgraded_result():
     assert second.eligibility.status == Status.UNKNOWN
 
 
-@pytest.mark.parametrize("damage,reason", [
-    ("schema", "INVALID_SCHEMA"),
-    ("empty_quote", "INVALID_SCHEMA"),
-    ("product_quote", "INVALID_PRODUCT_CITATION"),
-    ("product_field", "INVALID_SCHEMA"),
-    ("duplicate", "DUPLICATE_CONDITION_ID"),
-])
-def test_company_citation_recovery_also_accepts_normalized_fields(damage, reason):
+@pytest.mark.parametrize(
+    ("damage", "reason"),
+    [
+        ("schema", "INVALID_SCHEMA"),
+        ("empty_quote", "INVALID_SCHEMA"),
+        ("product_quote", "INVALID_PRODUCT_CITATION"),
+        ("product_field", "INVALID_SCHEMA"),
+        ("duplicate", "DUPLICATE_CONDITION_ID"),
+    ],
+)
+def test_company_citation_recovery_also_accepts_normalized_fields(damage, reason):  # noqa: ARG001 - fixture/parameter intentionally exercises setup and cases
     product, body, payload = case()
     payload["eligibility"]["citations"][0]["quote"] = "不存在的企业引用"
     if damage == "schema":

@@ -3,8 +3,8 @@
 import json
 from copy import deepcopy
 
-from app.harness import FinancialHarness
-from app.harness_store import EventStore
+from guikerong_finance.db.events import EventStore
+from guikerong_finance.service.harness import FinancialHarness
 from tests.test_continuation import products, save
 from tests.test_harness import create, environment, match, review, sample_catalog
 

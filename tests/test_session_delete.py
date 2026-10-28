@@ -2,12 +2,13 @@ import asyncio
 import sqlite3
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
-from app.errors import DomainError
-from app.harness import FinancialHarness
-from app.harness_models import MatchCommand
-from app.harness_store import EventStore
-from app.history import read_result
+from guikerong_finance.db.events import EventStore
+from guikerong_finance.errors import DomainError
+from guikerong_finance.models.commands import MatchCommand
+from guikerong_finance.service.harness import FinancialHarness
+from guikerong_finance.service.history import read_result
 from tests.test_harness import create, environment, match, request_body, sample_catalog
 from tests.test_history_continue import branch
 
@@ -15,15 +16,18 @@ __all__ = ["environment"]
 
 
 def delete(client, session, **updates):
-    return client.request("DELETE", f"/api/v1/sessions/{session['id']}",
-                          json={"expected_version": session["version"], **updates})
+    return client.request(
+        "DELETE", f"/api/v1/sessions/{session['id']}", json={"expected_version": session["version"], **updates}
+    )
 
 
 def test_delete_removes_all_session_and_trace_rows_but_keeps_other_data(environment):
     client, settings, _, _ = environment
     victim = match(client, create(client))
-    response = client.post(f"/api/v1/sessions/{victim['id']}/messages", json={
-        "expected_version": victim["version"], "message": "说明匹配结果"})
+    response = client.post(
+        f"/api/v1/sessions/{victim['id']}/messages",
+        json={"expected_version": victim["version"], "message": "说明匹配结果"},
+    )
     victim = response.json()
     other = match(client, create(client))
     store = EventStore(settings.harness_db_path)
@@ -92,7 +96,7 @@ def test_inflight_model_cannot_recreate_deleted_session_or_trace(environment, la
     store = EventStore(settings.harness_db_path)
     run_ids = []
 
-    async def delayed_model(*args, on_model_request, **kwargs):
+    async def delayed_model(*_args: object, on_model_request, **_kwargs):
         on_model_request({"product_id": "p1", "messages": [{"content": "private trace"}]})
         run_id = next(e["data"]["id"] for e in store.read(state["id"]) if e["kind"] == "match/requested")
         run_ids.append(run_id)
@@ -114,9 +118,11 @@ def test_delete_is_atomic_when_session_delete_fails(environment):
     store = EventStore(settings.harness_db_path)
     events, trace = store.read(victim["id"]), store.read(victim["run"]["id"])
     with sqlite3.connect(settings.harness_db_path) as connection:
-        connection.execute("CREATE TRIGGER reject_session_delete BEFORE DELETE ON events "
-                           "WHEN OLD.kind='session/created' BEGIN SELECT RAISE(ABORT,'simulated failure'); END")
-    with pytest.raises(sqlite3.IntegrityError):
+        connection.execute(
+            "CREATE TRIGGER reject_session_delete BEFORE DELETE ON events "
+            "WHEN OLD.kind='session/created' BEGIN SELECT RAISE(ABORT,'simulated failure'); END"
+        )
+    with pytest.raises(IntegrityError):
         store.delete_session(victim["id"], victim["version"])
     assert store.read(victim["id"]) == events
     assert store.read(victim["run"]["id"]) == trace
@@ -125,8 +131,8 @@ def test_delete_is_atomic_when_session_delete_fails(environment):
 def test_catalog_failure_does_not_block_session_deletion(tmp_path):
     from fastapi.testclient import TestClient
 
-    from app.config import Settings
-    from app.main import create_app
+    from guikerong_finance.application import create_app
+    from guikerong_finance.config import Settings
 
     settings = Settings(harness_db_path=tmp_path / "events.sqlite3", catalog_db_path=tmp_path / "missing.sqlite3")
     with TestClient(create_app(settings)) as client:

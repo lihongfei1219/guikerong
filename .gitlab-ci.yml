@@ -1,0 +1,147 @@
+stages:
+  - test
+  - build
+  - release
+  - deploy
+
+variables:
+  # Registry
+  CI_TEMPLATE_REGISTRY_HOST: "172.22.121.50/gzhu"
+  APT_SOURCE: "http://172.22.121.51:8081/repository/apt-aliyun/"
+  GITLAB_SOURCE: "http://172.22.121.51:8929/api/v4/"
+
+
+  # Cache
+  APT_CACHE_DIR: "$CI_PROJECT_DIR/apt"
+  KANIKO_CACHE_DIR: "$CI_PROJECT_DIR/kaniko"
+  PRE_COMMIT_HOME: "$CI_PROJECT_DIR/.pre-commit"
+
+  # Pip
+  PIP_TIMEOUT: 30
+  PIP_RETRIES: 5
+  PIP_TRUSTED_HOST: "172.22.121.51"
+  PYPI_URL: http://172.22.121.51:8081/repository/pypi-public/simple
+
+  # Python & UV
+  PYTHON_VERSION: "3.11"
+  UV_VERSION: "0.5"
+  UV_LINK_MODE: "copy"
+  UV_FROZEN: "true"
+
+# ⛓️ Shared templates
+.base_job_template: &base_job_template
+  stage: test
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+  tags:
+    - k8s_runner_persionnel_matching
+  rules:
+    - if: "$CI_COMMIT_MESSAGE =~ /^v/ || $CI_COMMIT_TAG"
+      when: never
+    - if: "$CI_COMMIT_BRANCH"
+
+.base_apt_env_template: &base_apt_env_template
+  before_script:
+    - |
+        rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d && \
+        echo "deb $APT_SOURCE/debian/ bookworm main" > /etc/apt/sources.list && \
+        echo "deb $APT_SOURCE/debian-security/ bookworm-security main" >> /etc/apt/sources.list && \
+        echo "deb $APT_SOURCE/debian/ bookworm-updates main" >> /etc/apt/sources.list && \
+        apt-get update -y && apt-get install -y --no-install-recommends git
+.base_git_env_template: &base_git_env_template
+  before_script:
+    - !reference [.base_apt_env_template, before_script]
+    - apt-get install -y --no-install-recommends git
+
+# 🔒 Secret scan
+include:
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+secret_detection:
+  <<: *base_job_template
+  allow_failure: false
+
+# ✅ Pre-commit check
+check-pre-commit:
+  <<: *base_job_template
+  <<: *base_git_env_template
+  image: ${CI_TEMPLATE_REGISTRY_HOST}/library/python:3.11-slim
+  cache:
+    key: ${CI_PROJECT_ID}-pre-commit-cache
+    paths:
+      - $PRE_COMMIT_HOME
+  script:
+    - pip install pre-commit==4.2.0 -i http://172.22.121.51:8081/repository/pypi-public/simple
+    - |
+        pre-commit run --all-files --show-diff-on-failure
+
+
+
+# 🧪 Project test
+test-project:
+  <<: *base_job_template
+  image: ${CI_TEMPLATE_REGISTRY_HOST}/astral-sh/uv:${UV_VERSION}-python${PYTHON_VERSION}-bookworm-slim
+  cache:
+    key: ${CI_PROJECT_ID}-test-cache
+    paths:
+      - tests/api/cassettes
+  before_script:
+    - uv sync --group dev
+    - cp "$CONFIG_FILE" ./config.yaml
+  script:
+    - uv run poe test-ci
+  coverage: '/(?i)total.*? (100(?:\.0+)?%|[1-9]?\d(?:\.\d+)?%)$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: cov.xml
+      junit: report.xml
+
+renovate:
+  image: ${CI_TEMPLATE_REGISTRY_HOST}/renovatebot/renovate:full
+  stage: test
+  variables:
+    RENOVATE_PLATFORM: gitlab
+    RENOVATE_ENDPOINT: $GITLAB_SOURCE
+    RENOVATE_TOKEN: $GITLAB_TOKEN
+    LOG_LEVEL: debug
+    RENOVATE_REPOSITORIES: "$CI_PROJECT_PATH"
+    RENOVATE_CACHE_NPM: "false"
+    RENOVATE_CACHE_PIP: "false"
+    RENOVATE_PYPI_PASS: "$PYPI_PASS"
+    HTTPS_PROXY: "$C_HTTPS_PROXY"
+  script:
+    - renovate
+  rules:
+    - if: "$CI_COMMIT_TAG"
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - if: '$CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "dev"'
+
+
+
+# 🚀 Semantic Release
+release:
+  <<: *base_git_env_template
+  image: ${CI_TEMPLATE_REGISTRY_HOST}/astral-sh/uv:${UV_VERSION}-python${PYTHON_VERSION}-bookworm-slim
+  stage: release
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - if: "$CI_COMMIT_MESSAGE =~ /^v/ || $CI_COMMIT_TAG"
+      when: never
+    - if: '$CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "dev"'
+  variables:
+    GIT_DEPTH: 0
+  before_script:
+    - !reference [.base_git_env_template, before_script]
+    - git checkout -B "$CI_COMMIT_REF_NAME" "origin/$CI_COMMIT_REF_NAME"
+    - git status
+  script:
+    - uv sync --extra release
+
+    - uv run poe release

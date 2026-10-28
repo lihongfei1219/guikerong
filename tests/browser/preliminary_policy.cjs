@@ -68,6 +68,19 @@ const session = { id: 's1', request, effective_matches: [product], runs: [], pro
     assert.deepEqual(await page.evaluate(() => state.view.data), run, 'History remains unchanged');
     await page.getByRole('button', { name: '返回全部产品总览', exact: true }).click();
     assert.equal(await page.locator('.preliminary-summary').textContent(), '2项概括性条件按初筛口径通过');
+    await page.evaluate(() => {
+      const product = state.session.effective_matches[0];
+      product.eligibility.condition_results = product.eligibility.condition_results.filter(c => c.status === 'PASS');
+      product.human_reviews = {};
+      renderResults();
+    });
+    assert.equal(await page.locator('.consistency-warning').count(), 1);
+    assert.equal(await page.getByRole('button', { name: '重新匹配核对结论', exact: true }).count(), 1);
+    await page.evaluate(() => {
+      state.session.effective_matches[0].overall_review_needed = true;
+      renderResults();
+    });
+    assert.equal(await page.locator('.consistency-warning').count(), 0, 'Human review pending is not model inconsistency');
     assert.deepEqual(errors, []);
     console.log('Preliminary policy labels: PASS-only, evidence/legacy fallback, human review exclusion, product count and immutable history passed.');
   } finally {

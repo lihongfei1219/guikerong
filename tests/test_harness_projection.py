@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 
-from app.harness_projection import project, replay_session, run_detail, runs_from
+from guikerong_finance.service.harness_projection import project, replay_session, run_detail, runs_from
 from tests.test_harness import create, environment, match, review, sample_catalog
 
 __all__ = ["environment"]
