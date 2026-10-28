@@ -944,3 +944,45 @@ def test_patent_keywords_do_not_override_a_models_unconfirmed_condition(monkeypa
 def isolated_chat_store(tmp_path, monkeypatch):
     from app.harness_store import EventStore
     monkeypatch.setattr("app.main.EventStore", lambda _: EventStore(tmp_path / "integration.sqlite3"))
+
+
+@pytest.mark.parametrize("terms,fact,status", [
+    ("高科技企业", "本企业主营软件研发，已向客户交付自研设备管理软件。", "PASS"),
+    ("具有国家高新技术企业资质", "本企业主营软件研发，尚未提供高新技术企业认定信息。", "UNKNOWN"),
+    ("国家高新技术企业", "企业名称为甲科技有限公司，实际业务情况未提供。", "UNKNOWN"),
+    ("实际经营期限长于本次贷款期限", "本企业实际经营五年，本次申请贷款期限未确定。", "UNKNOWN"),
+])
+def test_contextual_assessments_keep_evidence_and_do_not_become_blanket_pass(monkeypatch, terms, fact, status):
+    """Verify the request/result pipeline with fixtures, not live model reasoning accuracy."""
+    from app.cloud_matching import MATCHING_INTERPRETATION_POLICY
+
+    body = request()
+    body.documents = [body.documents[0].model_copy(update={"content": fact})]
+    products = catalog(application_conditions=terms)
+    judgement = {
+        "status": status, "subject_id": "company",
+        "explanation": "研发及软件交付事实支持科技属性。" if status == "PASS" else "该必要条件所需的具体事实尚不完整。",
+        "citations": [{"document_id": "d1", "quote": fact}],
+        "requires_human_verification": status == "UNKNOWN",
+        "required_material": "请确认原文所要求的具体资格或期限。" if status == "UNKNOWN" else None,
+        "verification_needs": ["MATERIAL_CONFIRMATION"] if status == "UNKNOWN" else [],
+    }
+    answer = {"eligibility": judgement, "conditions": [{
+        **judgement, "condition_id": "requirement", "source_field": "application_conditions", "source_quote": terms,
+    }]}
+
+    def handler(http_request):
+        messages = json.loads(http_request.content)["messages"]
+        assert MATCHING_INTERPRETATION_POLICY in messages[0]["content"]
+        context = json.loads(messages[-1]["content"])
+        assert context["product"]["application_conditions"] == terms
+        assert context["documents"] == [doc.model_dump(mode="json") for doc in body.documents]
+        return completion(answer)
+
+    install_transport(monkeypatch, handler)
+    result = match_company(body, products, settings())
+    item = result.matches[0]
+    assert item.eligibility.status == status
+    assert item.eligibility.condition_results[0].status == status
+    assert {e.quote for e in result.evidence.values()} == {fact}
+    assert result.versions["prompt"] == "product-preliminary-policy-4.3"

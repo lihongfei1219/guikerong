@@ -13,6 +13,15 @@ class VersionedCommand(Model):
 
 class ChatCommand(VersionedCommand):
     message: str = Field(min_length=1, max_length=12000)
+    product_id: str | None = Field(default=None, min_length=1, max_length=128)
+    condition_quote: str = Field(default="", max_length=8000)
+    run_id: str | None = Field(default=None, min_length=1, max_length=128)
+
+    @model_validator(mode="after")
+    def check_scope(self):
+        if self.condition_quote and not self.product_id:
+            raise ValueError("指定条款需先指定产品")
+        return self
 
 
 class SupplementCommand(VersionedCommand):
@@ -39,6 +48,31 @@ class DocumentEditCommand(VersionedCommand):
 
 class MatchCommand(VersionedCommand):
     product_ids: list[str] = Field(default_factory=list, max_length=100)
+
+
+class ContinueRunCommand(Model):
+    product_id: str | None = Field(default=None, min_length=1, max_length=128)
+
+
+class ClauseSupplement(Model):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    # New facts receive a server-generated document ID; edits retain their ID and scope.
+    document_id: str | None = Field(default=None, min_length=1, max_length=128)
+    condition_id: str = Field(min_length=1, max_length=128)
+    content: str = Field(min_length=1, max_length=30000)
+    verification: Literal["CONFIRMED", "UNVERIFIED"] = "UNVERIFIED"
+
+    @field_validator("content")
+    @classmethod
+    def nonblank_content(cls, value):
+        if not value.strip():
+            raise ValueError("补充信息不能为空")
+        return value
+
+
+class ProductSupplementsCommand(VersionedCommand):
+    base_run_id: str = Field(min_length=1, max_length=128)
+    entries: list[ClauseSupplement] = Field(min_length=1, max_length=100)
 
 
 class ReviewCommand(VersionedCommand):

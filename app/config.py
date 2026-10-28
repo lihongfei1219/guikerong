@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 @dataclass(frozen=True)
 class Settings:
     csv_path: Path = ROOT / "科技金融产品.csv"
+    catalog_db_path: Path = ROOT / "data" / "products.sqlite3"
     environment: str = "development"
     harness_db_path: Path = ROOT / "data" / "harness.sqlite3"
     max_documents: int = 100
@@ -123,6 +124,7 @@ class Settings:
             max_tokens_name = "ARK_MAX_COMPLETION_TOKENS"
         settings = cls(
             csv_path=Path(os.getenv("GUIKERONG_CSV_PATH", str(ROOT / "科技金融产品.csv"))),
+            catalog_db_path=Path(os.getenv("GUIKERONG_CATALOG_DB", str(ROOT / "data/products.sqlite3"))),
             environment=os.getenv("GUIKERONG_ENV", "development"),
             harness_db_path=Path(os.getenv("GUIKERONG_HARNESS_DB", str(ROOT / "data/harness.sqlite3"))),
             matching_mode=matching_mode,

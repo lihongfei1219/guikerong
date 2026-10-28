@@ -2,6 +2,7 @@
 const $ = id => document.getElementById(id);
 const state = {session: null, products: [], knowledge: [], busy: false, target: null, view: null};
 let matchingProgress = null;
+const composerDrafts = new Map();
 let uploadLimits = {max_documents: 100, max_document_bytes: 1048576, max_total_document_bytes: 10485760};
 function selectedFiles() {
   return [...$("folder-input").files, ...$("files").files]
@@ -21,11 +22,6 @@ function showSelection() {
 const labels = {PASS: "符合", FAIL: "不符合", UNKNOWN: "待核验", DRAFT: "草稿", PUBLISHED: "已发布", RETIRED: "已停用"};
 const decisionLabels = {FULLY_SATISFIED: "完全满足", PENDING_VERIFICATION: "待核验", NOT_ELIGIBLE: "不符合条件"};
 const needLabels = {MATERIAL_CONFIRMATION: "材料待确认", PROFESSIONAL_REVIEW: "专业要求待解释"};
-function needsBadges(needs) {
-  const container = node("div", undefined, "verification-needs");
-  for (const need of needs || []) container.append(node("span", needLabels[need], `tag ${need}`));
-  return container;
-}
 // getRandomValues also works on LAN HTTP, where randomUUID may be unavailable.
 function identifier() { return Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join(""); }
 function node(tag, text, className) {
@@ -34,10 +30,10 @@ function node(tag, text, className) {
   if (className) element.className = className;
   return element;
 }
-function notice(message, error = false) { $("notice").textContent = message; $("notice").className = error ? "error" : ""; }
-async function api(path, body) {
+function notice(message, error = false) { $("notice").textContent = message; $("notice").className = error ? "error" : ""; $("notice").hidden = !error; }
+async function api(path, body, method) {
   const headers = {"Content-Type": "application/json"};
-  const response = await fetch(`/api/v1${path}`, {method: body === undefined ? "GET" : "POST", headers,
+  const response = await fetch(`/api/v1${path}`, {method: method || (body === undefined ? "GET" : "POST"), headers,
     ...(body === undefined ? {} : {body: JSON.stringify(body)})});
   const data = await response.json();
   if (!response.ok) throw new Error(data.error?.message || `请求失败 (${response.status})`);
@@ -46,14 +42,19 @@ async function api(path, body) {
 async function work(action, message = "正在处理，请稍候…") {
   if (state.busy) return;
   state.busy = true;
+  renderComposer();
   document.body.setAttribute("aria-busy", "true");
   document.querySelectorAll("button").forEach(button => { button.dataset.wasDisabled = String(button.disabled); button.disabled = true; });
   notice(message);
-  try { await action(); notice("操作已完成，记录已保存。"); }
+  try { const message = await action(); notice(message || "操作已完成，记录已保存。"); }
   catch (error) {
     notice(error.message, true);
     if (state.session) {
-      try { state.session = await api(`/sessions/${state.session.id}`); renderSession(); } catch { /* Preserve original error. */ }
+      try {
+        const previousView = state.view;
+        state.session = await api(`/sessions/${state.session.id}`); renderSession();
+        if (previousView) { state.view = previousView; renderResults(); }
+      } catch { /* Preserve original error. */ }
     }
   } finally {
     state.busy = false;
@@ -62,25 +63,97 @@ async function work(action, message = "正在处理，请稍候…") {
       if (button.dataset.wasDisabled !== undefined) button.disabled = button.dataset.wasDisabled === "true";
       delete button.dataset.wasDisabled;
     });
-    ["match", "refresh-session", "export"].forEach(id => { $(id).disabled = !state.session; });
+    $("match").disabled = !state.session;
     updateSupplementFields();
+    renderComposer();
+    if (state.focusComposer) { $("chat-input").focus(); state.focusComposer = false; }
   }
 }
 function chooseTab(knowledge) {
-  $("knowledge-panel").hidden = !knowledge; $("results-panel").hidden = knowledge;
-  $("knowledge-tab").setAttribute("aria-selected", String(knowledge));
-  $("results-tab").setAttribute("aria-selected", String(!knowledge));
+  if (knowledge && !$("knowledge-panel").open) $("knowledge-panel").showModal();
+  else if (!knowledge && $("knowledge-panel").open) $("knowledge-panel").close();
 }
 async function loadSessions() {
   const data = await api("/sessions");
   $("sessions").replaceChildren();
+  if (!data.sessions.length) $("sessions").append(node("p", "还没有会话，点击上方新建。", "session-empty"));
   for (const session of data.sessions) {
-    const button = node("button", session.company.name, session.id === state.session?.id ? "active" : "");
+    const active = session.id === state.session?.id;
+    const row = node("div", undefined, `session-row${active ? " is-active" : ""}`);
+    const button = node("button", undefined, `session-open${active ? " active" : ""}`);
+    button.title = session.company.name;
+    if (active) button.setAttribute("aria-current", "true");
+    const icon = node("span", "", "session-icon");
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v16M17 9h3v12M2 21h20M8 7h1m3 0h1M8 11h1m3 0h1M8 15h1m3 0h1M9 21v-3h3v3"/></svg>';
+    const text = node("span", undefined, "session-copy");
+    const metadata = node("span", undefined, "session-meta");
+    metadata.append(node("span", session.origin ? "历史继续" : "企业会话", session.origin ? "session-branch" : ""));
+    const date = new Date(session.created_at);
+    if (!Number.isNaN(date.getTime())) {
+      const time = node("time", new Intl.DateTimeFormat("zh-CN", {month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).format(date));
+      time.dateTime = date.toISOString(); metadata.append(time);
+    }
+    text.append(node("span", session.company.name, "session-name"), metadata);
+    button.append(icon, text);
     button.onclick = () => work(async () => {
       state.session = await api(`/sessions/${session.id}`); renderSession(); await loadSessions();
     }, "正在恢复会话…");
-    $("sessions").append(button);
+    const remove = node("button", "删除", "session-delete danger");
+    remove.type = "button";
+    remove.setAttribute("aria-label", `删除会话：${session.company.name}`);
+    const menu = node("div", undefined, "session-menu");
+    menu.id = `session-menu-${session.id}`; menu.setAttribute("popover", "auto");
+    remove.textContent = "删除会话"; menu.append(remove);
+    const more = node("button", "···", "session-more");
+    more.type = "button"; more.title = "会话操作";
+    more.setAttribute("aria-label", `会话操作：${session.company.name}`);
+    more.setAttribute("aria-controls", menu.id); more.setAttribute("aria-expanded", "false");
+    more.onclick = () => {
+      if (state.busy) return;
+      if (menu.matches(":popover-open")) { menu.hidePopover(); return; }
+      menu.showPopover();
+      const rect = more.getBoundingClientRect();
+      menu.style.left = `${Math.max(8, Math.min(rect.right - 156, window.innerWidth - 164))}px`;
+      menu.style.top = `${Math.min(rect.bottom + 6, window.innerHeight - menu.offsetHeight - 8)}px`;
+      remove.focus();
+    };
+    menu.addEventListener("toggle", () => more.setAttribute("aria-expanded", String(menu.matches(":popover-open"))));
+    remove.onclick = () => work(async () => {
+      menu.hidePopover();
+      const current = await api(`/sessions/${session.id}`);
+      if (!await confirmSessionDeletion(session)) return "已取消删除。";
+      await api(`/sessions/${session.id}`, {expected_version: current.version}, "DELETE");
+      composerDrafts.delete(session.id);
+      if (state.session?.id === session.id) {
+        state.session = null; state.view = null; state.target = null;
+        matchingProgress = null;
+        for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
+        $("supplement-form").reset(); $("review-form").reset();
+        $("review-target").textContent = "";
+        state.supplementSessionId = null;
+        renderSession();
+      } else if (state.session?.origin?.session_id === session.id) {
+        state.session.origin.deleted = true; renderNavigation();
+      }
+      await loadSessions();
+      return "会话及其历史数据已永久删除。";
+    }, "正在删除会话…");
+    row.append(button, more, menu); $("sessions").append(row);
   }
+}
+function confirmSessionDeletion(session) {
+  const dialog = $("delete-session-dialog");
+  $("delete-session-name").textContent = session.company.name;
+  const cancel = $("cancel-session-delete"), confirm = $("confirm-session-delete");
+  cancel.disabled = false; confirm.disabled = false;
+  dialog.returnValue = "";
+  return new Promise(resolve => {
+    dialog.onclose = () => { dialog.onclose = null; resolve(dialog.returnValue === "delete"); };
+    cancel.onclick = () => dialog.close("cancel");
+    confirm.onclick = () => dialog.close("delete");
+    dialog.showModal(); cancel.focus();
+  });
 }
 async function loadKnowledge() {
   state.knowledge = (await api("/knowledge")).items;
@@ -89,9 +162,9 @@ async function loadKnowledge() {
 async function connect() {
   const health = await (await fetch("/health")).json();
   uploadLimits = {...uploadLimits, ...health.upload_limits};
-  $("health").textContent = `${health.model_provider === "deepseek" ? "DeepSeek" : "火山方舟"} · ${health.model_configured ? "已配置" : "未配置模型"}`;
+  $("health").textContent = health.model_configured ? "模型已就绪" : "待配置模型";
   state.products = (await api("/financial-products")).products;
-  for (const id of ["match-product", "knowledge-product", "supplement-product"]) {
+  for (const id of ["knowledge-product", "supplement-product", "composer-product"]) {
     const select = $(id); while (select.options.length > 1) select.remove(1);
     for (const product of state.products) select.add(new Option(product.product_name, product.product_id));
   }
@@ -100,17 +173,30 @@ async function connect() {
 }
 function renderSession() {
   const session = state.session;
-  if (!session) return;
+  if (!session) {
+    state.view = null;
+    $("session-title").textContent = "企业匹配助手";
+    $("session-meta").textContent = "选择或创建企业会话。";
+    $("messages").replaceChildren(node("div", "选择或创建企业会话。", "empty"));
+    $("matching-progress").hidden = true;
+    $("create-panel").open = true;
+    $("supplement-list").replaceChildren();
+    $("saved-supplements-title").textContent = "已保存的人工补充（0 条）";
+    $("edit-document").replaceChildren(new Option("选择已有文件", ""));
+    $("document-content").value = "";
+    resetResultFilters(); renderResults(); renderComposer();
+    return;
+  }
   state.view = null;
   if (matchingProgress?.sessionId !== session.id) $("matching-progress").hidden = true;
   $("session-title").textContent = session.request.company.name;
-  $("session-meta").textContent = `${session.request.documents.length} 份企业资料 · ${session.messages.length} 条会话记录 · 已保存`;
+  $("session-meta").textContent = `${session.request.documents.length} 份企业资料`;
   $("create-panel").open = false;
   $("messages").replaceChildren();
-  if (!session.messages.length) $("messages").append(node("div", "企业资料已保存。点击“开始匹配”获取反馈；之后可从消息中的“查看本次结果”回看。", "bubble"));
+  if (!session.messages.length) $("messages").append(node("div", "资料已准备好。点击“开始匹配”，或在下方输入问题。", "bubble assistant"));
   for (const message of session.messages) {
     const bubble = node("div", undefined, `bubble ${message.role}`);
-    bubble.append(node("small", message.role === "user" ? "你" : "桂科融助手"), node("div", message.content));
+    bubble.append(node("small", `${message.role === "user" ? "你" : "桂科融助手"}${message.context_label ? ` · ${message.context_label}` : ""}`), node("div", message.content));
     if (message.run_id) {
       const button = node("button", "查看本次结果");
       button.onclick = () => openRun(message.run_id);
@@ -122,34 +208,128 @@ function renderSession() {
   $("stale").hidden = !session.stale;
   renderSupplements();
   renderResults();
+  renderComposer();
+}
+
+function composerDraft() {
+  const key = state.session?.id || "new";
+  if (!composerDrafts.has(key)) composerDrafts.set(key, {mode: "question", text: "", productId: "", target: null, verified: false});
+  return composerDrafts.get(key);
+}
+function renderComposer() {
+  const draft = composerDraft();
+  const fact = draft.mode === "fact";
+  const unavailable = !state.session || state.busy;
+  $("compose-question").setAttribute("aria-pressed", String(!fact));
+  $("compose-fact").setAttribute("aria-pressed", String(fact));
+  $("chat-input").value = draft.text;
+  $("chat-input").maxLength = fact ? 30000 : 12000;
+  $("chat-input").disabled = unavailable;
+  $("chat-input").placeholder = !state.session ? "先创建或选择企业会话…" : fact
+    ? "补充具体事实，例如：本次拟申请贷款期限为2年。" : "输入你的问题，例如：这个产品为什么还需要核验？";
+  if (draft.productId && ![...$("composer-product").options].some(option => option.value === draft.productId)) {
+    $("composer-product").add(new Option(draft.target?.productName || draft.productId, draft.productId));
+  }
+  $("composer-product").value = draft.productId;
+  $("composer-product").disabled = unavailable;
+  $("chat-verified").checked = draft.verified;
+  $("chat-verified").disabled = unavailable;
+  $("composer-verification").hidden = !fact;
+  $("composer-target").hidden = !draft.target;
+  $("composer-target-text").textContent = draft.target ? `${draft.target.productName} · ${draft.target.quote || "产品整体"}` : "";
+  $("chat-send").textContent = state.busy ? "处理中…" : fact ? "保存并匹配" : "发送";
+  $("chat-send").disabled = unavailable || (fact && Boolean(state.view));
+  $("manage-materials").disabled = unavailable;
+  $("match").textContent = state.session?.run ? "重新匹配" : "开始匹配";
+  $("match").disabled = unavailable || Boolean(state.view);
+  $("match").title = state.view ? "从所选历史轮次继续后匹配" : draft.productId ? "匹配下方所选产品" : "匹配全部产品";
+  $("composer-context").hidden = !state.view && !fact;
+  $("composer-context").textContent = state.view
+    ? (fact ? "先从右侧历史轮次继续，再保存事实。" : "正在讨论所选历史轮次。")
+    : `保存事实并重新匹配${draft.productId ? "所选产品" : "全部产品"}。`;
+}
+function aimComposer(product, condition = null, mode = "fact") {
+  if (state.busy) return;
+  const draft = composerDraft();
+  draft.mode = mode; draft.productId = product.product_id;
+  draft.target = {productName: product.product_name, baseRunId: product.run_id,
+    conditionId: condition?.condition_id || "__eligibility__", quote: condition?.source_quote_verified ? condition.source_quote : ""};
+  notice(`已关联${product.product_name}${condition ? "的所选条款" : ""}，请在中间输入框${mode === "fact" ? "补充事实" : "提问"}。`);
+  renderComposer(); $("chat-input").focus(); $("chat-form").scrollIntoView({block: "nearest"});
+}
+function conversationButton(product, condition = null, mode = "fact") {
+  const button = node("button", "补充信息", "conversation-link");
+  button.onclick = () => aimComposer(product, condition, mode);
+  return button;
+}
+function matchingCommand(text) {
+  // Only whole, explicit commands dispatch work; questions and new facts stay in their selected mode.
+  const command = text.trim().replace(/\s+/g, "");
+  const match = /^(?:请|麻烦)?(?:你)?(?:帮我|帮忙)?(?:重新匹配|开始匹配|再匹配|匹配)(?:一下|一次)?(全部(?:产品)?|所有(?:产品)?|所选产品|当前产品|这个产品)?(?:一下|一次)?(?:吧)?[。！!]*$/.exec(command);
+  if (!match) return null;
+  return {scope: /^(全部|所有)/.test(match[1] || "") ? "all" : match[1] ? "selected" : "composer"};
+}
+function submitComposer() {
+  if (!state.session || state.busy || !$("chat-form").reportValidity()) return;
+  return work(async () => {
+    const draft = composerDraft();
+    const text = draft.text;
+    if (!text.trim()) throw new Error("请先输入问题或补充事实。");
+    if (text.length > (draft.mode === "fact" ? 30000 : 12000)) throw new Error("输入超过字数限制，请精简后发送。");
+    const command = matchingCommand(text);
+    if (command) {
+      if (state.view) throw new Error("当前正在查看历史轮次，请先点击“从这轮继续”，再重新匹配。");
+      if (command.scope === "selected" && !draft.productId) throw new Error("请先在输入框上方选择要匹配的产品。");
+      const productIds = command.scope === "all" || !draft.productId ? [] : [draft.productId];
+      const result = await performMatch(productIds);
+      if (!state.session.run.result.summary.failed_count) {
+        draft.text = "";
+        draft.target = null; // A successful run can change the selected clause and its base run.
+      }
+      renderComposer();
+      return result;
+    }
+    if (draft.mode === "question") {
+      const historicalView = state.view;
+      const question = node("div", undefined, "bubble user"); question.append(node("small", "你"), node("div", text));
+      const pending = node("div", "正在阅读资料并回复…", "bubble assistant pending-reply");
+      $("messages").append(question, pending); $("messages").scrollTop = $("messages").scrollHeight;
+      state.session = await api(`/sessions/${state.session.id}/messages`, {expected_version: state.session.version,
+        message: text, product_id: draft.productId || null, condition_quote: draft.target?.quote || "", run_id: historicalView?.data.id || null});
+      draft.text = "";
+      renderSession();
+      if (historicalView) { state.view = historicalView; renderResults(); }
+      return "回复已保存，可继续提问或补充事实。";
+    }
+    if (state.view) throw new Error("请先从右侧历史轮次继续，再保存事实。");
+    const current = state.session.effective_matches?.find(p => p.product_id === draft.productId);
+    const verification = draft.verified ? "CONFIRMED" : "UNVERIFIED";
+    if (draft.target && current?.run_id !== draft.target.baseRunId) throw new Error("评估已更新，请从右侧当前条款重新选择补充位置；输入内容已保留。");
+    if (current) {
+      state.session = await api(`/sessions/${state.session.id}/products/${encodeURIComponent(current.product_id)}/supplements`, {
+        expected_version: state.session.version, base_run_id: current.run_id,
+        entries: [{condition_id: draft.target?.conditionId || "__eligibility__", content: text, verification}],
+      });
+    } else {
+      state.session = await api(`/sessions/${state.session.id}/documents`, {expected_version: state.session.version,
+        documents: [{document_id: `supplement_${identifier()}`, filename: "对话补充事实.md", content: text}],
+        supplement: {product_id: draft.productId || null, verification}});
+    }
+    const ids = draft.productId ? [draft.productId] : [];
+    draft.text = ""; draft.verified = false; draft.target = null;
+    renderSession();
+    try { return await performMatch(ids); }
+    catch (error) { throw new Error(`事实已保存，匹配未完成。可直接重新匹配，无需重复输入。${error.message}`); }
+  }, "正在处理你的输入…");
 }
 function startReview(product, conditionId, text) {
   state.target = {product_id: product.product_id, condition_id: conditionId, run_id: product.run_id};
   $("review-target").textContent = `${product.product_name} · ${text}`;
   $("review-form").reset(); $("review-dialog").showModal();
 }
-function startKnowledge(product, quote) {
-  chooseTab(true); $("knowledge-editor").open = true;
-  $("knowledge-product").value = product.product_id; $("knowledge-quote").value = quote;
-  updateKnowledgeScope();
-  $("knowledge-title").focus();
-}
 function reviewButton(product, id, text) {
   const button = node("button", "人工复核"); button.disabled = Boolean(state.view) || !product.can_review;
   button.onclick = () => startReview(product, id, text); return button;
-}
-function materialButton(product, text, quote = "") {
-  const button = node("button", "补充 / 确认材料");
-  button.onclick = () => {
-    $("supplement-text").closest("details").open = true;
-    $("supplement-product").value = product.product_id;
-    $("supplement-mode").value = "ADD";
-    $("supplement-condition").value = quote;
-    updateSupplementFields();
-    $("supplement-text").placeholder = `${product.product_name}：${text}`;
-    $("supplement-text").focus();
-  };
-  return button;
 }
 function supplementDescription(info) {
   const product = state.products.find(p => p.product_id === info.product_id);
@@ -206,8 +386,7 @@ function renderSupplementFeedback(product) {
   const feedback = product.model_assessment?.supplement_feedback || [];
   if (!feedback.length) return null;
   const labels = {ADOPTED: "已采用", NOT_USED: "未采用", CONFLICT: "冲突待核对", NEEDS_CONFIRMATION: "尚需核实", NOT_REPORTED: "采纳反馈待核对", OUT_OF_SCOPE: "不适用本产品", CONDITIONS_CHANGED: "绑定条件已变化"};
-  const active = feedback.filter(f => !["OUT_OF_SCOPE", "CONDITIONS_CHANGED"].includes(f.status));
-  const details = node("details", undefined, "supplement-feedback"); details.open = active.length > 0;
+  const details = node("details", undefined, "supplement-feedback");
   details.append(node("summary", `人工补充处理反馈（已采用 ${feedback.filter(f => f.status === "ADOPTED").length} 条）`),
     node("p", "以下为本轮模型的处理反馈；已采用不代表符合条件，历史反馈不会随新材料自动更新。", "hint"));
   const documents = (state.view?.data.snapshot.request || state.session.request).documents;
@@ -250,13 +429,46 @@ function openProductHistory(product) {
     $("result-navigation").scrollIntoView({block: "nearest"});
   }, "正在读取该产品的全部匹配历史…");
 }
+function continueHistoryButton(productId = null, conditionId = null, label = "从这轮继续") {
+  const button = node("button", label, "primary history-continue");
+  button.disabled = !state.view?.data.can_continue;
+  const sourceSession = state.session.id;
+  const sourceRun = state.view?.data.id;
+  button.onclick = () => work(async () => {
+    state.session = await api(`/sessions/${sourceSession}/runs/${sourceRun}/continue`, {product_id: productId});
+    resetResultFilters(); renderSession(); chooseTab(false); await loadSessions();
+    const targetId = productId || state.session.effective_matches[0]?.product_id;
+    const card = [...$("results").querySelectorAll(".product")].find(p => p.dataset.productId === targetId);
+    if (card) {
+      const product = state.session.effective_matches.find(p => p.product_id === targetId);
+      const draft = composerDraft();
+      draft.mode = "fact"; draft.productId = targetId;
+      const clause = product.eligibility.condition_results.find(c => c.condition_id === conditionId);
+      draft.target = {productName: product.product_name, baseRunId: product.run_id,
+        conditionId: clause?.condition_id || "__eligibility__", quote: clause?.source_quote_verified ? clause.source_quote : ""};
+      renderComposer(); $("chat-form").scrollIntoView({block: "nearest"});
+      state.focusComposer = true;
+    }
+    return "已从所选轮次继续。可直接补充信息并匹配，原会话记录已保留。";
+  }, "正在载入所选轮次的资料与评估…");
+  return button;
+}
 function renderNavigation() {
   const navigation = $("result-navigation"); navigation.replaceChildren();
   $("history-snapshot").replaceChildren();
   if (!state.view) {
-    navigation.append(node("h3", "全部产品总览"));
+    if (state.session?.origin) {
+      const origin = state.session.origin;
+      navigation.append(node("p", `继续自 ${timeLabel(origin.evaluated_at)} 的评估`, "hint"));
+      const back = node("button", origin.deleted ? "原会话已删除" : "返回原会话");
+      back.disabled = Boolean(origin.deleted);
+      back.onclick = () => work(async () => {
+        state.session = await api(`/sessions/${origin.session_id}`); resetResultFilters(); renderSession(); await loadSessions();
+      });
+      navigation.append(back);
+    }
     if (state.session?.runs?.length) {
-      const label = node("label", "按匹配轮次回看");
+      const label = node("details", undefined, "history-picker"); label.append(node("summary", "匹配历史"));
       const select = node("select"); select.add(new Option("选择历史轮次…", ""));
       for (const run of state.session.runs) select.add(new Option(`${timeLabel(run.created_at)} · ${run.attempts.length} 个产品 · ${attemptLabels[run.status]}`, run.id));
       select.onchange = () => { if (select.value) openRun(select.value); };
@@ -267,8 +479,11 @@ function renderNavigation() {
   const {data, productId, history} = state.view;
   const back = node("button", "返回全部产品总览");
   back.onclick = () => { state.view = null; resetResultFilters(); renderResults(); };
-  navigation.append(back, node("h3", productId ? "单产品历史（只读）" : "本次匹配结果（只读）"),
+  navigation.append(back, node("h3", productId ? "单产品历史" : "本次匹配结果"),
     node("p", `${timeLabel(data.created_at)} · ${attemptLabels[data.status]}`, "hint"));
+  navigation.append(continueHistoryButton(productId), node("p", data.can_continue
+    ? "使用本轮资料继续，原记录保留。"
+    : "该轮缺少完整资料快照或成功评估，请选择其他轮次继续。", "hint"));
   if (history) {
     const label = node("label", "选择产品版本"); const select = node("select");
     for (const run of history.runs) {
@@ -279,7 +494,6 @@ function renderNavigation() {
     label.append(select); navigation.append(label);
   }
   const snapshot = node("details", undefined, "snapshot"); snapshot.append(node("summary", "查看本轮企业资料与专业知识快照"));
-  snapshot.append(node("p", `资料版本 ${data.snapshot.input_revision ?? "未记录"} · 模型 ${data.snapshot.model || "未记录"} · ${data.snapshot.provider || ""}`, "hint"));
   const request = data.snapshot.request;
   if (!request) snapshot.append(node("p", "该历史轮次没有完整输入快照。", "hint"));
   for (const doc of request?.documents || []) {
@@ -308,91 +522,115 @@ function renderResults() {
   renderNavigation();
   const products = (state.view?.data.effective_matches || session?.effective_matches || [])
     .filter(p => !state.view?.productId || p.product_id === state.view.productId);
-  $("result-count").textContent = `${products.length} 个已评估产品`;
-  const current = state.view ? products : products.filter(p => !p.stale);
-  $("status-summary").textContent = `${state.view ? "本轮结论" : `资料与口径未变化 ${current.length} 个`}：` + Object.entries(decisionLabels).map(([key, label]) => `${label} ${current.filter(p => p.decision === key).length}`).join(" · ");
+  const filter = $("status-filter").value;
+  const needFilter = Object.hasOwn(needLabels, filter) ? filter : null;
+  const search = $("product-search").value.trim().toLowerCase();
+  const visibleProducts = products.filter(product =>
+    `${product.product_name} ${product.institution}`.toLowerCase().includes(search) &&
+    (filter === "all" || product.decision === filter ||
+      (product.decision === "PENDING_VERIFICATION" && product.verification_needs.includes(filter))));
+  $("result-count").textContent = filter === "all" && !search
+    ? `${products.length} 个已评估产品` : `显示 ${visibleProducts.length} / ${products.length} 个产品`;
+  $("result-filter-summary").hidden = !needFilter;
+  $("result-filter-summary").textContent = needFilter ? `当前展示${needLabels[needFilter]}的条款。` : "";
   $("stale").hidden = Boolean(state.view) || !session?.stale;
-  $("stale").textContent = `${products.filter(p => p.stale).length} 个产品需要更新，旧结论保留供参考，未计入上方当前状态统计。`;
+  $("stale").textContent = `${products.filter(p => p.stale).length} 个产品的资料已变化，需要重新匹配。`;
   $("results").replaceChildren();
-  let lastGroup;
-  for (const product of products) {
-    if (!`${product.product_name} ${product.institution}`.toLowerCase().includes($("product-search").value.trim().toLowerCase())) continue;
-    const filter = $("status-filter").value;
-    if (filter !== "all" && product.decision !== filter && !(product.decision === "PENDING_VERIFICATION" && product.verification_needs.includes(filter))) continue;
-    if (lastGroup !== product.decision) {
-      $("results").append(node("h3", decisionLabels[product.decision], "result-group"));
-      lastGroup = product.decision;
-    }
-    const card = node("article", undefined, "product");
-    card.dataset.productId = product.product_id;
+  for (const product of visibleProducts) {
+    const card = node("article", undefined, "product"); card.dataset.productId = product.product_id;
     const heading = node("div", undefined, "product-head");
     const title = node("div"); title.append(node("h3", product.product_name), node("span", product.institution, "hint"));
-    title.append(node("div", `条款覆盖 ${product.match_score}%（辅助信息）`, "hint"));
-    heading.append(title, node("span", decisionLabels[product.decision], `tag ${product.eligibility.status}`)); card.append(heading);
-    card.append(needsBadges(product.verification_needs));
-    const supplementFeedback = renderSupplementFeedback(product);
-    if (supplementFeedback) card.append(supplementFeedback);
-    card.append(node("p", `评估时间：${timeLabel(product.evaluated_at)}`, "hint"));
-    if (!state.view) {
-      if (product.stale) card.append(node("p", `需要更新：${product.stale_reasons.join("；")}。以下为上次结论。`, "warning"));
-      if (product.latest_attempt && product.latest_attempt.status !== "SUCCEEDED") card.append(node("p", `最近尝试：${attemptLabels[product.latest_attempt.status]}，当前保留上次成功评估。请重新匹配后复核。`, "warning"));
-      const history = node("button", `查看历史（${product.history_count} 次）`);
-      history.onclick = () => openProductHistory(product);
-      const retry = node("button", "重新匹配此产品"); retry.onclick = () => runMatch([product.product_id]);
-      const actions = node("div", undefined, "product-history-actions"); actions.append(history, retry); card.append(actions);
+    heading.append(title, node("span", decisionLabels[product.decision], `tag ${product.eligibility.status}`));
+    card.append(heading, node("p", product.eligibility.explanation, "product-explanation"));
+    if (!state.view && product.stale) card.append(node("p", `待更新：${product.stale_reasons.join("；")}`, "warning"));
+    if (!state.view && product.latest_attempt && product.latest_attempt.status !== "SUCCEEDED") {
+      card.append(node("p", "上次匹配未完成，已保留资料和旧结果。", "warning"));
+      const retry = node("button", "重新匹配此产品"); retry.onclick = () => runMatch([product.product_id]); card.append(retry);
     }
-    const overall = node("div", undefined, "condition");
-    overall.append(node("p", product.eligibility.explanation));
-    if (product.overall_review_needed) overall.append(node("p", "条款已有人工修改，请另行复核整体资格。", "warning"));
-    if (product.human_reviews.__eligibility__) overall.append(showHuman(product.human_reviews.__eligibility__));
-    overall.append(reviewButton(product, "__eligibility__", "整体资格（请综合且 / 或 / 豁免关系判断）"));
-    if (product.verification_needs.includes("MATERIAL_CONFIRMATION")) overall.append(materialButton(product, product.eligibility.explanation));
-    if (product.verification_needs.includes("PROFESSIONAL_REVIEW")) {
-      const knowledge = node("button", "解释产品要求");
-      knowledge.onclick = () => startKnowledge(product, product.application_conditions);
-      overall.append(knowledge);
+    const comparison = renderContinuation(product); if (comparison) card.append(comparison);
+    const conditions = product.eligibility.condition_results;
+    const preliminary = c => c.status === "PASS" && c.assessment_basis === "PRELIMINARY_POLICY" && !product.human_reviews?.[c.condition_id];
+    const preliminaryCount = conditions.filter(preliminary).length;
+    if (preliminaryCount) card.append(node("p", `${preliminaryCount}项概括性条件按初筛口径通过`, "hint preliminary-summary"));
+    const highlighted = c => c.status === "UNKNOWN" && (!needFilter || c.verification_needs.includes(needFilter));
+    const others = node("details", undefined, "other-conditions");
+    const otherCount = conditions.filter(c => !highlighted(c)).length;
+    others.append(node("summary", `查看其余 ${otherCount} 条条件`));
+    if (!conditions.some(highlighted) && product.eligibility.status === "UNKNOWN") {
+      card.append(node("p", "待核验事项见上方整体判断。", "hint"));
+      card.append(state.view ? continueHistoryButton(product.product_id, null, "从这里继续补充") : conversationButton(product));
     }
-    card.append(overall);
-    const source = node("details"); source.append(node("summary", "完整申请条件"), node("p", product.application_conditions)); card.append(source);
-    if (state.view) {
-      const original = state.view.data.result?.matches.find(p => p.product_id === product.product_id);
-      if (original) {
-        const detail = node("details"); detail.append(node("summary", "模型原始判断（未叠加人工复核）"),
-          node("p", `${labels[original.eligibility.status]}：${original.eligibility.explanation}`));
-        for (const condition of original.eligibility.condition_results) detail.append(node("p", `${condition.source_quote}\n${labels[condition.status]}：${condition.explanation}`));
-        card.append(detail);
+    for (const condition of conditions) {
+      const item = node("div", undefined, "condition"); item.dataset.conditionId = condition.condition_id;
+      item.append(node("span", preliminary(condition) ? "初筛通过" : labels[condition.status], `tag ${condition.status}`), node("blockquote", condition.source_quote));
+      if (highlighted(condition)) {
+        item.append(node("p", condition.required_material || condition.explanation));
+        item.append(state.view ? continueHistoryButton(product.product_id, condition.condition_id, "从这里继续补充") : conversationButton(product, condition));
       }
-    }
-    for (const condition of product.eligibility.condition_results) {
-      const item = node("div", undefined, "condition");
-      item.append(node("span", labels[condition.status], `tag ${condition.status}`), node("blockquote", condition.source_quote), node("p", condition.explanation));
-      if (condition.status === "UNKNOWN") item.append(needsBadges(condition.verification_needs));
-      if (!condition.source_quote_verified) item.append(node("p", "该条件描述未逐字定位到产品原文，请核对完整申请条件。", "hint"));
+      const evidence = node("details", undefined, "condition-evidence"); evidence.append(node("summary", "依据与复核"), node("p", condition.explanation));
+      if (!condition.source_quote_verified) evidence.append(node("p", "该条款未逐字定位到申请条件原文，请核对。", "warning"));
       for (const id of condition.evidence_ids) {
-        const evidence = product.evidence?.[id];
-        if (evidence) item.append(node("blockquote", `${evidence.quote}\n— ${evidence.filename}，第 ${evidence.line_start}–${evidence.line_end} 行`));
+        const ref = product.evidence?.[id];
+        if (ref) evidence.append(node("blockquote", `${ref.quote}\n— ${ref.filename}，第 ${ref.line_start}–${ref.line_end} 行`));
       }
-      if (condition.status === "UNKNOWN" && condition.required_material) item.append(node("p", `待核验：${condition.required_material}`, "hint"));
-      if (product.human_reviews[condition.condition_id]) item.append(showHuman(product.human_reviews[condition.condition_id]));
-      item.append(reviewButton(product, condition.condition_id, condition.source_quote));
-      if (condition.verification_needs.includes("MATERIAL_CONFIRMATION")) {
-        item.append(materialButton(product, condition.required_material || condition.explanation, condition.source_quote_verified ? condition.source_quote : ""));
+      if (product.human_reviews[condition.condition_id]) evidence.append(showHuman(product.human_reviews[condition.condition_id]));
+      if (!state.view) {
+        evidence.append(reviewButton(product, condition.condition_id, condition.source_quote));
+        if (!highlighted(condition)) evidence.append(conversationButton(product, condition));
       }
-      const knowledge = node("button", "补充专业知识"); knowledge.onclick = () => startKnowledge(product, condition.source_quote); item.append(knowledge);
-      const retry = node("button", "重新匹配此产品"); retry.onclick = () => runMatch([product.product_id]); item.append(retry);
-      card.append(item);
+      item.append(evidence);
+      if (highlighted(condition)) card.append(item); else others.append(item);
     }
+    if (otherCount) card.append(others);
+    const more = node("details", undefined, "product-details"); more.append(node("summary", "产品详情"));
+    more.append(node("p", `评估时间：${timeLabel(product.evaluated_at)}`, "hint"));
+    const source = node("details"); source.append(node("summary", "完整申请条件"), node("p", product.application_conditions)); more.append(source);
+    if (product.overall_review_needed) more.append(node("p", "条款已有人工修改，请复核整体资格。", "warning"));
+    if (product.human_reviews.__eligibility__) more.append(showHuman(product.human_reviews.__eligibility__));
+    const feedback = renderSupplementFeedback(product); if (feedback) more.append(feedback);
+    if (!state.view) {
+      const history = node("button", "查看历史"); history.onclick = () => openProductHistory(product);
+      const retry = node("button", "重新匹配此产品"); retry.onclick = () => runMatch([product.product_id]);
+      more.append(history, retry, reviewButton(product, "__eligibility__", "整体资格"));
+    }
+    card.append(more);
     for (const warning of product.validation_warnings) card.append(node("p", warning, "warning"));
-    if (state.view) card.querySelectorAll("button").forEach(button => { button.hidden = true; });
     $("results").append(card);
   }
   const attempts = state.view?.data.attempts || session?.product_attempts || [];
   for (const attempt of attempts) {
-    if (attempt.status === "SUCCEEDED" || (state.view?.productId && state.view.productId !== attempt.product_id)) continue;
-    if (!attempt.product_name.toLowerCase().includes($("product-search").value.trim().toLowerCase())) continue;
+    if (filter !== "all" || attempt.status === "SUCCEEDED" || (state.view?.productId && state.view.productId !== attempt.product_id)) continue;
+    if (!attempt.product_name.toLowerCase().includes(search)) continue;
     $("results").append(node("div", `${attempt.product_name}：${attemptLabels[attempt.status]}。${attempt.message || attempt.error_code || "可重新匹配。"}`, "warning"));
   }
-  if (!$("results").children.length) $("results").append(node("div", session?.run ? "当前筛选下没有产品。" : "开始匹配后，将在此展示条款和原文依据。", "empty"));
+  if (!$("results").children.length) $("results").append(node("div", state.view || products.length || session?.run ? "当前筛选下没有产品。" : "开始匹配后，在这里查看结果。", "empty"));
+  renderComposer();
+}
+
+function renderContinuation(product) {
+  const comparison = product.continuation;
+  if (!comparison) return null;
+  const section = node("details", undefined, "continuation-result");
+  const outdated = !state.view && (product.stale || (product.latest_attempt && product.latest_attempt.status !== "SUCCEEDED"));
+  section.append(node("summary", `${outdated ? "上次评估变化" : "本轮变化"}：${labels[comparison.before]} → ${labels[comparison.after]}`),
+    node("p", "与上轮模型判断对比，人工复核单独展示。", "hint"));
+  const details = node("div");
+  for (const change of comparison.changes) {
+    if (change.before === change.after && change.after !== "UNKNOWN") continue;
+    details.append(node("p", `${change.source_quote}\n${change.before ? labels[change.before] : "本轮重新划分"} → ${labels[change.after]}\n${change.explanation}`));
+    if (change.after === "UNKNOWN" && change.required_material) details.append(node("p", `仍需确认：${change.required_material}`, "hint"));
+  }
+  if (!details.children.length) details.append(node("p", "条款状态与上轮一致，当前没有待核验条款。"));
+  if (comparison.unpaired_previous_count) details.append(node("p", "部分条款划分或原文定位发生变化，未直接对应旧条款；可查看两轮完整结果。", "hint"));
+  section.append(details);
+  const changedIds = new Set([...comparison.added_document_ids, ...comparison.updated_document_ids]);
+  const feedbackLabels = {ADOPTED: "已采用", NOT_USED: "信息不足或不适用", CONFLICT: "与资料冲突", NEEDS_CONFIRMATION: "尚需核实", NOT_REPORTED: "采纳情况未能核对"};
+  for (const item of product.model_assessment?.supplement_feedback || []) {
+    if (!changedIds.has(item.document_id)) continue;
+    section.append(node("p", `本轮补充：${feedbackLabels[item.status] || item.status}\n${item.reason}\n${item.impact || ""}`));
+  }
+  if (comparison.removed_document_ids.length) section.append(node("p", `该轮移除 ${comparison.removed_document_ids.length} 份资料，结果依据该轮保存的资料重新判断。`, "hint"));
+  return section;
 }
 function updateKnowledgeScope() {
   $("knowledge-quote").required = Boolean($("knowledge-product").value);
@@ -478,32 +716,34 @@ async function streamMatch(session, productIds) {
 }
 function runMatch(productIds) {
   if (!state.session) return;
-  work(async () => {
-    matchingProgress = {sessionId: state.session.id, completed: 0, total: 0, failed: 0, failures: new Set(),
-      startedAt: performance.now(), label: "正在准备匹配…"};
-    $("matching-progress").hidden = false;
-    $("matching-progress").dataset.status = "running";
-    drawMatchProgress();
-    const timer = setInterval(drawMatchProgress, 1000);
-    try {
-      state.session = await streamMatch(state.session, productIds);
-      const summary = state.session.run.result.summary;
-      matchingProgress.total = matchingProgress.completed = summary.evaluated_count + summary.failed_count;
-      matchingProgress.failed = summary.failed_count;
-      matchingProgress.label = summary.failed_count ? "处理完成，部分产品评估失败" : "匹配完成";
-      $("matching-progress").dataset.status = "completed";
-      renderSession(); chooseTab(false);
-      if (productIds.length === 1) {
-        resetResultFilters(); renderResults();
-        const card = [...$("results").querySelectorAll(".product")].find(p => p.dataset.productId === productIds[0]);
-        if (card) { card.classList.add("just-updated"); card.scrollIntoView({block: "nearest"}); }
-      }
-    } catch (error) {
-      matchingProgress.label = "匹配已中断，请查看上方提示";
-      $("matching-progress").dataset.status = "error";
-      throw error;
-    } finally { clearInterval(timer); drawMatchProgress(); }
-  }, "正在调用模型匹配，完成后结果自动显示。请保持页面打开；操作记录会保存。");
+  return work(() => performMatch(productIds), "正在调用模型匹配，完成后结果自动显示。请保持页面打开；操作记录会保存。");
+}
+async function performMatch(productIds) {
+  matchingProgress = {sessionId: state.session.id, completed: 0, total: 0, failed: 0, failures: new Set(),
+    startedAt: performance.now(), label: "正在准备匹配…"};
+  $("matching-progress").hidden = false;
+  $("matching-progress").dataset.status = "running";
+  drawMatchProgress();
+  const timer = setInterval(drawMatchProgress, 1000);
+  try {
+    state.session = await streamMatch(state.session, productIds);
+    const summary = state.session.run.result.summary;
+    matchingProgress.total = matchingProgress.completed = summary.evaluated_count + summary.failed_count;
+    matchingProgress.failed = summary.failed_count;
+    matchingProgress.label = summary.failed_count ? "处理完成，部分产品评估失败" : "匹配完成";
+    $("matching-progress").dataset.status = "completed";
+    renderSession(); chooseTab(false);
+    if (productIds.length === 1) {
+      resetResultFilters(); renderResults();
+      const card = [...$("results").querySelectorAll(".product")].find(p => p.dataset.productId === productIds[0]);
+      if (card) { card.classList.add("just-updated"); card.scrollIntoView({block: "nearest"}); }
+    }
+    return summary.failed_count ? "部分产品评估失败，已保留补充与上次成功结果，可重新匹配重试。" : "匹配已完成，可查看本轮判断变化和剩余问题。";
+  } catch (error) {
+    matchingProgress.label = "匹配已中断，请查看上方提示";
+    $("matching-progress").dataset.status = "error";
+    throw error;
+  } finally { clearInterval(timer); drawMatchProgress(); }
 }
 $("create-form").onsubmit = event => {
   event.preventDefault(); work(async () => {
@@ -580,20 +820,29 @@ $("close-review").onclick = () => $("review-dialog").close();
 $("folder-input").onchange = () => { if ($("folder-input").files.length) $("files").value = ""; showSelection(); };
 $("files").onchange = () => { if ($("files").files.length) $("folder-input").value = ""; showSelection(); };
 $("new-session").onclick = () => { $("create-panel").open = true; $("company").focus(); };
-$("match").onclick = () => runMatch($("match-product").value ? [$("match-product").value] : []);
-$("refresh-session").onclick = () => work(async () => { state.session = await api(`/sessions/${state.session.id}`); renderSession(); });
+$("match").onclick = () => runMatch(composerDraft().productId ? [composerDraft().productId] : []);
 $("status-filter").onchange = renderResults;
 $("supplement-product").onchange = () => { $("supplement-condition").value = ""; updateSupplementFields(); };
 $("supplement-mode").onchange = () => { updateSupplementFields(); if ($("supplement-mode").value === "EDIT") loadDocumentContent(); };
 $("edit-document").onchange = loadDocumentContent;
 $("product-search").oninput = renderResults;
-$("results-tab").onclick = () => chooseTab(false);
-$("knowledge-tab").onclick = () => chooseTab(true);
+$("open-knowledge").onclick = () => { if (!state.busy) chooseTab(true); };
+$("close-knowledge").onclick = () => chooseTab(false);
 $("knowledge-product").onchange = updateKnowledgeScope;
-$("export").onclick = () => work(async () => {
-  const data = await api(`/sessions/${state.session.id}/events`);
-  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: "application/json"}));
-  const link = node("a"); link.href = url; link.download = `${state.session.id}-完整记录.json`; link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-});
+$("manage-materials").onclick = () => { if (!state.busy) $("materials-dialog").showModal(); };
+$("close-materials").onclick = () => $("materials-dialog").close();
+$("compose-question").onclick = () => { if (!state.busy) { composerDraft().mode = "question"; renderComposer(); $("chat-input").focus(); } };
+$("compose-fact").onclick = () => { if (!state.busy) { composerDraft().mode = "fact"; renderComposer(); $("chat-input").focus(); } };
+$("composer-product").onchange = () => { const draft = composerDraft(); draft.productId = $("composer-product").value; draft.target = null; renderComposer(); };
+$("clear-composer-target").onclick = () => { if (!state.busy) { composerDraft().target = null; renderComposer(); } };
+$("chat-input").oninput = () => {
+  const draft = composerDraft(); draft.text = $("chat-input").value;
+};
+$("chat-verified").onchange = () => { composerDraft().verified = $("chat-verified").checked; };
+$("chat-form").onsubmit = event => { event.preventDefault(); submitComposer(); };
+$("chat-input").onkeydown = event => {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
+    event.preventDefault(); if (!state.busy) $("chat-form").requestSubmit();
+  }
+};
 work(connect, "正在连接服务…");

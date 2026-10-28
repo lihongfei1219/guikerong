@@ -7,12 +7,16 @@
   <script src="/assets/chat.js" defer></script>
 </head>
 <body>
-<header><a class="brand" href="/"><b>桂</b> 桂科融 <span>金融匹配助手</span></a><nav><span id="health">连接中</span><a href="/docs">接口文档</a></nav></header>
-<div id="notice" role="status" aria-live="polite">导入企业资料，开始一段可持续的匹配对话。</div>
+<header><a class="brand" href="/"><b>桂</b> 桂科融</a><span id="health">连接中</span></header>
+<div id="notice" role="status" aria-live="polite" hidden></div>
 <main>
   <aside class="sidebar">
     <div class="section-title"><h2>企业会话</h2><button id="new-session" class="quiet">＋ 新建</button></div>
     <div id="sessions" class="session-list"></div>
+    <div class="sidebar-tools" aria-label="资料与知识管理">
+      <button id="manage-materials" type="button" class="sidebar-tool" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>企业资料</span></button>
+      <button id="open-knowledge" type="button" class="sidebar-tool"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C9 3 5 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-2-1-6-1-9 1zM12 5v15"/></svg><span>专业知识</span></button>
+    </div>
     <details id="create-panel" open><summary>创建企业会话</summary>
       <form id="create-form"><label>企业法定全称<input id="company" required maxlength="200" placeholder="请输入申请企业全称"></label>
       <label>选择企业资料文件夹<input id="folder-input" type="file" webkitdirectory multiple></label>
@@ -24,18 +28,27 @@
       <p class="hint">资料与对话将保存在本机服务数据库。匹配和提问时发送到已配置的模型服务。</p>
       <button type="submit" class="primary">创建会话</button></form>
     </details>
-    <div class="boundary"><strong>协作流程</strong><p>上传资料 → AI 匹配 → 解释疑点 → 补充知识或材料 → 人工确认</p><p>专业知识解释条件，企业材料证明事实，人工复核记录结论。</p></div>
   </aside>
   <section class="conversation">
-    <div class="conversation-heading"><div><span class="eyebrow">FINANCIAL ASSISTANT</span><h1 id="session-title">让专业判断有依据</h1><p id="session-meta">选择或创建企业会话，持续完善匹配结论。</p></div><button id="export" disabled class="quiet">导出完整记录</button></div>
-    <div class="actions"><select id="match-product" aria-label="匹配范围"><option value="">全部产品</option></select><button id="match" class="primary" disabled>开始匹配</button><button id="refresh-session" disabled>刷新会话</button></div>
+    <div class="conversation-heading"><div><h1 id="session-title">企业匹配助手</h1><p id="session-meta">选择或创建企业会话。</p></div><button id="match" class="primary" disabled>开始匹配</button></div>
     <div id="matching-progress" class="matching-progress" hidden>
       <div class="matching-progress-heading"><span id="matching-progress-label" role="status" aria-live="polite">正在准备匹配…</span><strong id="matching-progress-percent">0%</strong></div>
       <div id="matching-progress-track" class="matching-progress-track" role="progressbar" aria-label="整体匹配进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="matching-progress-fill"></div></div>
       <div class="matching-progress-meta"><span id="matching-progress-count">等待产品清单</span><span id="matching-progress-elapsed">已用 0 秒</span></div>
     </div>
-    <div id="messages" class="messages" aria-live="polite"><div class="welcome"><div class="spark">✧</div><h2>从“待核验”，走向有据可查。</h2><p>匹配后查看产品反馈，补充材料、专业知识或人工确认。点击消息中的“查看本次结果”回看对应匹配。</p></div></div>
-    <details class="supplement"><summary>补充企业事实 / 材料</summary><form id="supplement-form">
+    <div id="messages" class="messages" role="log" aria-label="企业匹配对话" aria-live="polite"><div class="welcome"><div class="spark">✧</div><h2>一起完善这家企业的匹配判断</h2><p>从左侧创建或选择企业。你可以在这里提问、补充事实，并结合右侧结果继续核验。</p></div></div>
+    <div class="composer-area">
+      <form id="chat-form" class="chat-composer">
+        <div class="composer-toolbar"><div class="composer-modes" role="group" aria-label="输入用途"><button type="button" id="compose-question" aria-pressed="true">提问</button><button type="button" id="compose-fact" aria-pressed="false">补充事实</button></div><label class="composer-scope"><span class="sr-only">对话适用产品</span><select id="composer-product" aria-label="对话适用产品"><option value="">企业整体 / 全部产品</option></select></label></div>
+        <div id="composer-target" class="composer-target" hidden><span id="composer-target-text"></span><button type="button" id="clear-composer-target" class="quiet">取消条款限定</button></div>
+        <label class="sr-only" for="chat-input">输入问题或补充事实</label><textarea id="chat-input" rows="2" maxlength="12000" required disabled title="Enter 发送，Shift + Enter 换行" placeholder="先创建或选择企业会话…"></textarea>
+        <label id="composer-verification" class="continuation-verification" hidden><input id="chat-verified" type="checkbox">我已核实以上事实</label>
+        <p id="composer-context" class="hint">问题会结合企业资料和已保存的结果回答。</p>
+        <div class="composer-footer"><button id="chat-send" type="submit" class="primary" disabled>发送</button></div>
+      </form>
+    </div>
+    <dialog id="materials-dialog" class="materials-dialog"><div class="section-title"><h2>企业资料与补充</h2><button id="close-materials" type="button" class="quiet">关闭</button></div>
+    <details class="supplement" open><summary>补充企业事实 / 材料</summary><form id="supplement-form">
       <p class="hint">可以新增事实，也可以选择已有文件，修改内容并保存，或删除该文件。</p>
       <div class="supplement-grid">
         <label id="supplement-scope">适用范围<select id="supplement-product"><option value="">企业通用事实（所有相关产品）</option></select></label>
@@ -52,18 +65,18 @@
       <button id="delete-document" type="button" class="danger" hidden disabled>删除文件</button>
       <span class="hint">保存或删除后请重新匹配相关产品。</span>
       <p id="last-document-hint" class="hint" hidden>至少保留一份企业资料，请先补充新资料再删除此文件。</p>
-    </form><details id="saved-supplements"><summary id="saved-supplements-title">已保存的人工补充</summary><div id="supplement-list"></div></details></details>
+    </form><details id="saved-supplements"><summary id="saved-supplements-title">已保存的人工补充</summary><div id="supplement-list"></div></details></details></dialog>
   </section>
   <section class="workbench">
-    <div class="tabs" role="tablist"><button id="results-tab" role="tab" aria-selected="true">匹配与复核</button><button id="knowledge-tab" role="tab" aria-selected="false">专业知识库</button></div>
+    <h2 class="workbench-title">匹配结果</h2>
     <div id="results-panel">
       <div id="result-navigation"></div>
       <div class="result-tools"><strong id="result-count">暂无评估</strong><label>产品状态<select id="status-filter"><option value="all">全部产品</option><option value="FULLY_SATISFIED">完全满足</option><option value="PENDING_VERIFICATION">待核验（全部）</option><option value="MATERIAL_CONFIRMATION">待核验 · 材料待确认</option><option value="PROFESSIONAL_REVIEW">待核验 · 专业要求待解释</option><option value="NOT_ELIGIBLE">不符合条件</option></select></label></div>
-      <label>查找产品<input id="product-search" type="search" placeholder="输入产品名称或银行"></label>
-      <p id="status-summary" class="hint"></p><p class="hint">总览保留每个产品最近一次成功评估。单产品重跑只更新该产品；历史轮次只读。条款覆盖分仅作辅助。</p>
+      <label class="sr-only" for="product-search">查找产品</label><input id="product-search" type="search" placeholder="查找产品或银行">
+      <p id="result-filter-summary" class="hint" role="status" aria-live="polite" hidden></p>
       <p id="stale" class="warning" hidden></p><div id="history-snapshot"></div>
       <div id="results"><div class="empty">完成匹配后，在这里逐条查看依据、补充知识和人工确认。</div></div></div>
-    <div id="knowledge-panel" hidden>
+    <dialog id="knowledge-panel" class="materials-dialog"><div class="section-title"><h2>专业知识</h2><button id="close-knowledge" type="button" class="quiet">关闭</button></div>
       <p class="hint">只注入已发布且有效的解释。知识不能代替企业证明或银行认定；发布后请重新匹配相关产品。</p>
       <details id="knowledge-editor"><summary>＋ 追加专业知识</summary><form id="knowledge-form">
         <label>标题<input id="knowledge-title" required maxlength="200"></label>
@@ -74,10 +87,18 @@
         <button class="primary">保存为草稿</button>
       </form></details>
       <div id="knowledge-list"></div>
-    </div>
+    </dialog>
   </section>
 </main>
 <dialog id="review-dialog"><form id="review-form"><h2>记录人工复核</h2><p id="review-target"></p><p class="hint">仅适用于当前企业和当前轮次。结论与模型原始判断分别保存。</p>
 <label>结论<select id="review-status"><option value="PASS">满足（整体复核时为完全满足）</option><option value="FAIL">不符合条件</option><option value="UNKNOWN_MATERIAL">待核验 · 材料待确认</option><option value="UNKNOWN_PROFESSIONAL">待核验 · 专业要求待解释</option><option value="UNKNOWN_BOTH">待核验 · 两类原因均有</option></select></label>
 <label>审核人<input id="reviewer" required maxlength="100"></label><label>判断理由<textarea id="review-reason" required maxlength="4000" rows="3"></textarea></label><label>核验依据 / 来源<textarea id="review-evidence" required maxlength="4000" rows="3" placeholder="核对的资料、文件编号、银行确认记录等"></textarea></label><div class="dialog-actions"><button type="button" id="close-review">取消</button><button class="primary">保存复核结论</button></div></form></dialog>
+<dialog id="delete-session-dialog" class="delete-session-dialog" aria-labelledby="delete-session-title" aria-describedby="delete-session-description">
+  <div class="delete-dialog-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></div>
+  <h2 id="delete-session-title">删除这条会话？</h2>
+  <p id="delete-session-name" class="delete-session-name"></p>
+  <p id="delete-session-description">聊天、资料副本、匹配历史、复核及模型调用记录将永久删除，无法恢复。</p>
+  <p class="delete-session-note">独立的历史继续会话、产品库和公共知识库会保留。</p>
+  <div class="dialog-actions"><button type="button" id="cancel-session-delete" autofocus>取消</button><button type="button" id="confirm-session-delete" class="delete-confirm">永久删除</button></div>
+</dialog>
 </body></html>

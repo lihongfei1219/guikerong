@@ -14,3 +14,4 @@ outputs/
 *.log
 ~$*
 data/harness.sqlite3*
+data/products.sqlite3*

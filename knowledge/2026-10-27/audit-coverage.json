@@ -1,0 +1,560 @@
+[
+  {
+    "product_id": "2067451066285584385",
+    "product_name": "智企贷",
+    "quote": "经北行认可",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "原文明示特定银行认可，仍核对对应认可依据；同句概括科技属性、商业前景按初筛口径放行。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451075701796866",
+    "product_name": "兴速贷（广西创新积分专属）",
+    "quote": "符合我行线上融资模型基本准入要求",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2067451075701796866.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451080676241409",
+    "product_name": "科技转化贷",
+    "quote": "符合建设银行信用政策等其他相关规定",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2067451080676241409.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451081003397121",
+    "product_name": "科企订单贷",
+    "quote": "企业符合建设银行相关政策制度规定",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451080013541378",
+    "product_name": "科技易贷",
+    "quote": "满足建设银行要求的其他条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451079493447682",
+    "product_name": "科技研发贷",
+    "quote": "申请科技研发项目贷款的，还需满足固定资产贷款的相关要求",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2067451079493447682.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451079493447682",
+    "product_name": "科技研发贷",
+    "quote": "符合建设银行信用政策等其他相关规定",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2067451079493447682.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451079036268546",
+    "product_name": "科技担保畅行贷",
+    "quote": "建行要求的其他条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719890491469825",
+    "product_name": "善科贷",
+    "quote": "符合国家产业政策和建设银行信贷政策",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2075719890491469825.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719890491469825",
+    "product_name": "善科贷",
+    "quote": "满足建设银行要求的其他条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2075719890491469825.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719892055945218",
+    "product_name": "桂科贷",
+    "quote": "企业符合国家产业政策、广西产业发展布局以及建设银行信贷政策",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2075719892055945218.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719892055945218",
+    "product_name": "桂科贷",
+    "quote": "满足建设银行要求的其他条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2075719892055945218.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719893691723777",
+    "product_name": "善新贷",
+    "quote": "符合国家产业政策和建设银行信贷政策",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719893691723777",
+    "product_name": "善新贷",
+    "quote": "满足建设银行要求的其他条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451068575674369",
+    "product_name": "桂盛·科创贷",
+    "quote": "符合农合机构一般流动资金贷款业务借款人需满足的其他条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451068575674369",
+    "product_name": "桂盛·科创贷",
+    "quote": "符合农合机构可循环流动资金贷款业务借款人需满足的其他条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451068575674369",
+    "product_name": "桂盛·科创贷",
+    "quote": "符合农合机构固定资产贷款业务借款人需满足的其他条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451068575674369",
+    "product_name": "桂盛·科创贷",
+    "quote": "农合机构要求的其他条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451070416973825",
+    "product_name": "桂盛·专利贷",
+    "quote": "农合机构要求的其他条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451082383323137",
+    "product_name": "备货贸易融资",
+    "quote": "符合国家产业政策、我行信贷政策的各项要求",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451072958722049",
+    "product_name": "出口信用保险项下融资",
+    "quote": "借款人应符合桂林银行授信要求的准入条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451072308604929",
+    "product_name": "出口发票融资",
+    "quote": "借款人应符合桂林银行授信要求的准入条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451071260028929",
+    "product_name": "出口订单融资",
+    "quote": "借款人应符合桂林银行授信要求的准入条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451070937067521",
+    "product_name": "桂新-融智贷",
+    "quote": "借款人应符合桂林银行授信业务要求的准入条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2067451070937067521.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "local-row-37",
+    "product_name": "国际贸易货押融资",
+    "quote": "进出口货物符合建行押品要求",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "local-row-37",
+    "product_name": "国际贸易货押融资",
+    "quote": "并符合相关贸易融资产品办理条件",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451083293487106",
+    "product_name": "为境外投资企业提供的融资性对外担保（内保外贷）",
+    "quote": "业务背景真实，符合银行业务合规审查要求",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2067451083293487106.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451065731936257",
+    "product_name": "科企贷",
+    "quote": "拥有 1项以上 I类自主知识产权，或 2项以上 I I类自主知识产权",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451065731936257.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451065731936257",
+    "product_name": "科企贷",
+    "quote": "企业主/主要股东获得国家或地方政府颁发的高层次人才称号",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451065731936257.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451075701796866",
+    "product_name": "兴速贷（广西创新积分专属）",
+    "quote": "符合人民银行公布的7类科技型企业标签",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451075701796866.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451075701796866",
+    "product_name": "兴速贷（广西创新积分专属）",
+    "quote": "符合广西重点产业发展方向",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451075701796866.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451082832113666",
+    "product_name": "创新积分贷",
+    "quote": "行业对标模型中科技创新维度和财务表现维度平均分位数均大于20%",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": null,
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451083293487106",
+    "product_name": "为境外投资企业提供的融资性对外担保（内保外贷）",
+    "quote": "具有参与基础交易的经营资格",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451083293487106.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451078256128002",
+    "product_name": "短期出口信用保险保单融资",
+    "quote": "中国出口信用保险公司短期出口信用保险综合保险",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451078256128002.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451077283049474",
+    "product_name": "出口信贷",
+    "quote": "中信保承保融资所需险种",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451077283049474.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2069334632061779970",
+    "product_name": "科技e贷",
+    "quote": "科技型企业客群",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": null,
+    "handling": "没有指定正式认定或指标的科技型客群，按概括条款初筛放行；不另加高新证书或实际研发证明，已知具体反例另行判断。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451067459989506",
+    "product_name": "专精特新企业贷",
+    "quote": "专精特新企业客群",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451067459989506.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451067065724930",
+    "product_name": "科创e贷",
+    "quote": "企业应具备科技型企业资质或科技创新积分",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451067065724930.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451073885663233",
+    "product_name": "交银桂科贷",
+    "quote": "科技型小微企业客户",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451073885663233.md",
+    "handling": "科技型概括属性按初筛口径放行；小微具有可核验的划型标准，仍依据行业、人数与收入判断，不能把中型或大型视为小微。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719901765758978",
+    "product_name": "科创贷",
+    "quote": "具有专精特新企业、国家高新技术企业、科技型中小企业等国家部委牵头认定及重点培育的科技企业资质",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2075719901765758978.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719890491469825",
+    "product_name": "善科贷",
+    "quote": "企业获得国家或地方政府评定的优质企业资质称号",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2075719890491469825.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451076356108289",
+    "product_name": "专精特新贷",
+    "quote": "各级“专精特新”及培育企业名单范围内的企业",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451076356108289.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719892055945218",
+    "product_name": "桂科贷",
+    "quote": "借款人应取得投资基金的投资已实际到位且未退出",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2075719892055945218.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451079493447682",
+    "product_name": "科技研发贷",
+    "quote": "企业创始人或实际控制人从事本领域五年（含）以上，核心研发人员（主管级及以上）从事本领域三年（含）以上",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451079493447682.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451080676241409",
+    "product_name": "科技转化贷",
+    "quote": "科技成果转化对象为专利、软件著作权、集成电路布图设计、创新药、设计图、配方等",
+    "category": "KNOWLEDGE_GAP",
+    "knowledge_file": "products/2067451080676241409.md",
+    "handling": "查看对应产品释义及仍未知事项；明确的资质、名录、数值或具体事实继续核验，其中未给具体标准的概括描述采用初筛放行，不把文件中的公开定义变成额外证明要求。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451073885663233",
+    "product_name": "交银桂科贷",
+    "quote": "创新积分较高",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2067451073885663233.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451075185897474",
+    "product_name": "农银广西创新积分贷",
+    "quote": "符合环境、社会和治理风险管理相关规定",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451075185897474",
+    "product_name": "农银广西创新积分贷",
+    "quote": "符合反洗钱、反恐怖融资、反扩散融资、反逃税及制裁风险管理相关规定",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451075185897474",
+    "product_name": "农银广西创新积分贷",
+    "quote": "不良记录的产生非主观恶意且申请本次用信前已全部偿还不良信用",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "涉及已经存在的不良记录及非恶意、申请前已全部清偿的明确例外条件，仍分别核验，不由概括条款放行覆盖。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451074795827202",
+    "product_name": "创新积分贷",
+    "quote": "无对我行债权产生重大不利影响的债务纠纷、诉讼、民间借贷等情况",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "没有已知具体反例时，未量化的重大不利影响按初筛口径放行，不自设金额线；已存在纠纷或风险事实时据实判断其影响，不忽略具体反例。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719901765758978",
+    "product_name": "科创贷",
+    "quote": "无大额待执行诉讼",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2075719901765758978.md",
+    "handling": "不因未给“大额”金额线单独阻断初筛，也不自造金额；已有具体待执行诉讼或冲突事实时单独判断，不借概括口径掩盖已知风险。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451081397661697",
+    "product_name": "跨境供应链融资",
+    "quote": "围绕核心企业开展生产经营的上下游链条企业",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "未指定具体名单或量化标准的客群描述按初筛口径放行；不因缺少银行核心企业名单额外补件，已有明确不属于相关关系的反例仍据实判断。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451069301288962",
+    "product_name": "桂盛·商标贷",
+    "quote": "主营业务突出，收入来源稳定，资信状况良好，具有持续经营、履行合同、按期偿还贷款本息的能力",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2067451069301288962.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451083687751681",
+    "product_name": "惠如愿•专精特新贷",
+    "quote": "企业经营情况良好，企业及其法定代表人征信记录良好",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451067459989506",
+    "product_name": "专精特新企业贷",
+    "quote": "资信状况良好",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": "products/2067451067459989506.md",
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2069334632061779970",
+    "product_name": "科技e贷",
+    "quote": "资信状况良好",
+    "category": "BANK_RULE_UNAVAILABLE",
+    "knowledge_file": null,
+    "handling": "2026-10-27扩大初筛口径：未列具体核验标准的概括描述，在无已知具体反例时直接按初筛口径通过，不因政策、银行内部规则或评分标准未提供而额外补件；这是应用假设，不是外部认证或已完成银行审批。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451081003397121",
+    "product_name": "科企订单贷",
+    "quote": "3.与借款人建",
+    "category": "SOURCE_INCOMPLETE",
+    "knowledge_file": null,
+    "handling": "原文截断不可猜补；明确的2%/100万美元/5年等数字与期间仍核验，只在口径差异影响结论时确认，不因不影响结论的概括词补件。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451079493447682",
+    "product_name": "科技研发贷",
+    "quote": "企业近三年研发费用投入占销售收入比重不低于 2%",
+    "category": "SOURCE_INCOMPLETE",
+    "knowledge_file": "products/2067451079493447682.md",
+    "handling": "原文截断不可猜补；明确的2%/100万美元/5年等数字与期间仍核验，只在口径差异影响结论时确认，不因不影响结论的概括词补件。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2075719900528439297",
+    "product_name": "出口闪贷",
+    "quote": "企业近1年海关出口量在100万美元以上",
+    "category": "SOURCE_INCOMPLETE",
+    "knowledge_file": null,
+    "handling": "原文截断不可猜补；明确的2%/100万美元/5年等数字与期间仍核验，只在口径差异影响结论时确认，不因不影响结论的概括词补件。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451069301288962",
+    "product_name": "桂盛·商标贷",
+    "quote": "剩余有效期原则上不少于5年并能覆盖整个质押期",
+    "category": "SOURCE_INCOMPLETE",
+    "knowledge_file": "products/2067451069301288962.md",
+    "handling": "原文截断不可猜补；明确的2%/100万美元/5年等数字与期间仍核验，只在口径差异影响结论时确认，不因不影响结论的概括词补件。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451079036268546",
+    "product_name": "科技担保畅行贷",
+    "quote": "企业成立且实际经营1年（含）以上，实际经营期限应长于贷款期限",
+    "category": "LOGIC_RISK",
+    "knowledge_file": null,
+    "handling": "保留明确必要条件及且或关系；贷款期限未知不能满足实际经营期限长于贷款期限的具体比较，不能用概括条款初筛放行覆盖。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  },
+  {
+    "product_id": "2067451080013541378",
+    "product_name": "科技易贷",
+    "quote": "企业成立且实际经营1年（含）以上，实际经营期限应长于贷款期限",
+    "category": "LOGIC_RISK",
+    "knowledge_file": null,
+    "handling": "保留明确必要条件及且或关系；贷款期限未知不能满足实际经营期限长于贷款期限的具体比较，不能用概括条款初筛放行覆盖。",
+    "handling_revision": "2026-10-27-expanded-preliminary"
+  }
+]

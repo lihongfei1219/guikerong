@@ -1,22 +1,22 @@
 """Session, knowledge and human review commands for the shared workspace."""
 
-import asyncio
-
 from fastapi import APIRouter
 
-from app.errors import DomainError
 from app.harness_models import (
     ChatCommand,
+    ContinueRunCommand,
     DocumentDeleteCommand,
     DocumentEditCommand,
     KnowledgeDecision,
     KnowledgeDraft,
     MatchCommand,
+    ProductSupplementsCommand,
     ReviewCommand,
     SupplementCommand,
+    VersionedCommand,
 )
 from app.models import MatchRequest
-from app.streaming import MatchingStreamResponse, encode_event
+from app.streaming import MatchingStreamResponse, matching_events
 
 
 def public_state(state):
@@ -38,9 +38,17 @@ def create_harness_router(harness, get_catalog):
     def session(identifier: str):
         return public_state(harness.session(identifier, get_catalog()))
 
+    @router.delete("/sessions/{identifier}")
+    def delete_session(identifier: str, payload: VersionedCommand):
+        return harness.store.delete_session(identifier, payload.expected_version)
+
     @router.get("/sessions/{identifier}/runs/{run_id}")
     def run_detail(identifier: str, run_id: str):
         return harness.run_detail(identifier, run_id)
+
+    @router.post("/sessions/{identifier}/runs/{run_id}/continue", status_code=201)
+    def continue_run(identifier: str, run_id: str, payload: ContinueRunCommand):
+        return public_state(harness.continue_run(identifier, run_id, payload, get_catalog()))
 
     @router.get("/sessions/{identifier}/products/{product_id}/history")
     def product_history(identifier: str, product_id: str):
@@ -57,6 +65,10 @@ def create_harness_router(harness, get_catalog):
     @router.post("/sessions/{identifier}/documents")
     def supplement(identifier: str, payload: SupplementCommand):
         return public_state(harness.supplement(identifier, payload, get_catalog()))
+
+    @router.post("/sessions/{identifier}/products/{product_id}/supplements")
+    def product_supplements(identifier: str, product_id: str, payload: ProductSupplementsCommand):
+        return public_state(harness.product_supplements(identifier, product_id, payload, get_catalog()))
 
     @router.post("/sessions/{identifier}/documents/edit")
     def edit_document(identifier: str, payload: DocumentEditCommand):
@@ -78,39 +90,11 @@ def create_harness_router(harness, get_catalog):
     async def match_stream(identifier: str, payload: MatchCommand):
         catalog = get_catalog()
 
-        async def events():
-            queue = asyncio.Queue()
+        async def execute(*, on_progress):
+            return public_state(await harness.match(identifier, payload, catalog, on_progress=on_progress))
 
-            async def run():
-                try:
-                    result = await harness.match(identifier, payload, catalog,
-                                                 on_progress=lambda data: queue.put_nowait(("progress", data)))
-                    queue.put_nowait(("result", public_state(result)))
-                except DomainError as exc:
-                    queue.put_nowait(("error", {"error": {"code": exc.code, "message": exc.message}}))
-                except asyncio.CancelledError:
-                    raise
-                except Exception:
-                    queue.put_nowait(("error", {"error": {"code": "MATCH_ENGINE_UNAVAILABLE",
-                                                         "message": "匹配中断，请刷新会话查看已保存记录。"}}))
-
-            worker = asyncio.create_task(run())
-            try:
-                while True:
-                    try:
-                        event, data = await asyncio.wait_for(queue.get(), timeout=10)
-                    except TimeoutError:
-                        yield ": heartbeat\n\n"
-                        continue
-                    yield encode_event(event, data)
-                    if event in {"result", "error"}:
-                        break
-            finally:
-                if not worker.done():
-                    worker.cancel()
-                await asyncio.gather(worker, return_exceptions=True)
-
-        return MatchingStreamResponse(events(), headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+        return MatchingStreamResponse(matching_events(execute),
+                                      headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
     @router.post("/sessions/{identifier}/reviews")
     def review(identifier: str, payload: ReviewCommand):

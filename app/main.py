@@ -13,12 +13,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.catalog import load_catalog
+from app.catalog_store import CatalogStore
 from app.config import Settings
 from app.errors import DomainError
 from app.harness import FinancialHarness
 from app.harness_api import create_harness_router
 from app.harness_store import EventStore
+from app.matching_context import MATCHING_PROMPT_VERSION
 from app.models import Catalog
 
 logger = logging.getLogger("guikerong")
@@ -95,6 +96,7 @@ class RequestBoundaryMiddleware:
 def create_app(settings: Settings | None = None, catalog: Catalog | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     settings.validate()
+    catalog_store = CatalogStore(settings.catalog_db_path)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
@@ -102,10 +104,10 @@ def create_app(settings: Settings | None = None, catalog: Catalog | None = None)
         application.state.catalog = catalog
         if catalog is None:
             try:
-                application.state.catalog = load_catalog(settings.csv_path)
+                application.state.catalog = catalog_store.load()
             except (DomainError, OSError, ValueError) as exc:
                 logger.error("Catalog startup failed: %s", type(exc).__name__)
-                application.state.catalog_error = "产品库加载失败，请检查本地 CSV 文件。"
+                application.state.catalog_error = "产品数据库加载失败，请先导入或检查产品数据库。"
         yield
 
     application = FastAPI(
@@ -143,14 +145,19 @@ def create_app(settings: Settings | None = None, catalog: Catalog | None = None)
         return error_response(request.state.request_id, "MATCH_ENGINE_UNAVAILABLE", "处理失败，未交付部分结果。", 503)
 
     def get_catalog() -> Catalog:
-        current = getattr(application.state, "catalog", None)
+        # Each operation gets one coherent published snapshot. Explicit imports
+        # become visible on the next request without a server restart.
+        current = catalog_store.load() if catalog is None else application.state.catalog
         if current is None or not current.products:
-            raise DomainError("CATALOG_UNAVAILABLE", "没有可用产品库，请检查入库数据。", 503)
+            raise DomainError("CATALOG_UNAVAILABLE", "没有可用产品库，请先导入或检查产品数据库。", 503)
         return current
 
     @application.get("/health", tags=["运行状态"])
     def health():
-        current = getattr(application.state, "catalog", None)
+        try:
+            current = get_catalog()
+        except DomainError:
+            current = None
         ready = current is not None and any(
             p.availability_status != "UNAVAILABLE" for p in current.products
         )
@@ -158,8 +165,11 @@ def create_app(settings: Settings | None = None, catalog: Catalog | None = None)
             "status": "ok" if ready else "degraded", "version": "0.1.0",
             "environment": settings.environment, "catalog_count": len(current.products) if current else 0,
             "raw_record_count": current.raw_record_count if current else 0,
+            "catalog_storage": "sqlite" if catalog is None else "provided",
+            "catalog_version": current.version if current else None,
             "input_mode": "raw_documents", "external_verification": False,
             "matching_mode": settings.matching_mode,
+            "matching_prompt_version": MATCHING_PROMPT_VERSION,
             "model_provider": settings.model_provider,
             "model_configured": bool(settings.ark_api_key and settings.ark_model),
             "model_connectivity_checked": False,

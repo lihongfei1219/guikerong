@@ -69,6 +69,9 @@ def test_health_reports_exact_upload_limits_without_secrets_or_paths(static_site
             "max_documents": 17, "max_document_bytes": 2048,
             "max_total_document_bytes": 16384, "max_characters": 12345, "max_body_bytes": 32768,
         }
+        from app.cloud_matching import MATCHING_PROMPT_VERSION
+
+        assert response.json()["matching_prompt_version"] == MATCHING_PROMPT_VERSION
         for private in (
             "private-local-test-key", "private-cloud-test-key", "private-test-model",
             "private-gateway", "private-catalog.csv", "private-rules.json", str(static_site.parent),

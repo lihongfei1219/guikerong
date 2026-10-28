@@ -7,6 +7,7 @@ from datetime import date, timedelta
 import pytest
 
 from app.cloud_matching import (
+    MATCHING_INTERPRETATION_POLICY,
     build_messages,
     build_repair_messages,
     citation_evidence,
@@ -59,6 +60,40 @@ def assert_invalid(product, body, payload):
         validate_assessment(payload, product, body, TODAY)
     assert caught.value.code == "ARK_INVALID_RESPONSE"
     assert caught.value.status_code == 502
+
+
+def test_overall_pass_reuses_validated_clause_citations_without_mutating_response():
+    from copy import deepcopy
+
+    product, body, payload = case()
+    payload["eligibility"]["citations"] = []
+    original = deepcopy(payload)
+    assessment = validate_assessment(payload, product, body, TODAY)
+    eligibility, evidence = merge_assessment(product, body, TODAY, assessment)
+    assert eligibility.status == Status.PASS
+    assert {evidence[eid].quote for eid in eligibility.evidence_ids} == {
+        "营业收入为120元。", "主营工业包装产品设计与制造。",
+    }
+    assert payload == original
+
+
+@pytest.mark.parametrize("status", ["UNKNOWN", "FAIL"])
+def test_clause_citations_do_not_replace_other_overall_decisions(status):
+    product, body, payload = case()
+    payload["eligibility"].update(status=status, citations=[])
+    assessment = validate_assessment(payload, product, body, TODAY)
+    assert assessment.eligibility.status == Status.UNKNOWN
+    assert assessment.eligibility.citations == []
+
+
+def test_invalid_clause_does_not_supply_overall_citation_fallback():
+    product, body, payload = case()
+    payload["eligibility"]["citations"] = []
+    payload["conditions"][0]["citations"] = []
+    assessment = validate_assessment(payload, product, body, TODAY)
+    assert assessment.conditions[0].status == Status.UNKNOWN
+    assert assessment.eligibility.status == Status.UNKNOWN
+    assert assessment.eligibility.citations == []
 
 
 def test_model_identifies_conditions_and_provides_overall_eligibility_without_rules():
@@ -172,7 +207,11 @@ def test_every_citation_is_checked_against_the_original_document(damage):
         assert result.condition_results[0].source_quote_verified is False
         assert result.condition_results[0].status == Status.PASS
     elif damage == "empty_quote":
-        assert validate_assessment(payload, product, body, TODAY).eligibility.status == Status.UNKNOWN
+        overall = validate_assessment(payload, product, body, TODAY).eligibility
+        assert overall.status == Status.PASS
+        assert {ref.quote for ref in overall.citations} == {
+            "营业收入为120元。", "主营工业包装产品设计与制造。",
+        }
     else:
         assert_invalid(product, body, payload)
 
@@ -184,6 +223,9 @@ def test_unsupported_decisive_answers_require_professional_verification(section,
     judgement = payload["conditions"][0] if section == "condition" else payload[section]
     unsupported_claim = "已符合该条件。" if status == "PASS" else "因未提供证明，企业不符合该条件。"
     judgement.update(status=status, citations=[], explanation=unsupported_claim)
+    if section == "eligibility":
+        # Truly unsupported: no complete set of validated clause evidence either.
+        payload["conditions"][0]["citations"] = []
     original = deepcopy(payload)
     assessment = validate_assessment(payload, product, body, TODAY)
     result = assessment.conditions[0] if section == "condition" else getattr(assessment, section)
@@ -628,6 +670,28 @@ def test_initial_and_repair_prompts_interpret_existing_ip_facts_without_adding_d
     assert json.loads(repair[1]["content"])["validation_feedback"]["related_condition_id"] == "group"
 
 
+def test_interpretation_policy_survives_repair_with_original_terms_and_knowledge():
+    product, body, payload = case()
+    product.application_conditions = "高科技企业；实际经营期限长于本次贷款期限"
+    body.documents[0].content = "本企业主营软件研发，已有软件产品；经营五年，本次贷款期限尚未确定。"
+    knowledge = [{"id": "k1", "content": "科技属性可结合研发活动与产品判断；不能由此推定贷款期限。"}]
+    initial = build_messages(product, body, TODAY, expert_knowledge=knowledge)
+    repair = build_repair_messages(product, body, TODAY, payload, {
+        "reason": "INVALID_EVIDENCE_CITATION", "condition_id": "business",
+    }, expert_knowledge=knowledge)
+    for messages in (initial, repair):
+        prompt = messages[0]["content"]
+        assert prompt.count(MATCHING_INTERPRETATION_POLICY) == 1
+        assert "普通科技企业也可满足该项" in prompt
+        assert "一般科技业务不等同已获得认证" in prompt
+        assert "贷款期限未知时不得猜测常见期限" in prompt
+        assert "不擅自新增收入、利润、增长率或评级阈值" in prompt
+        context = json.loads(messages[1]["content"])
+        assert context["documents"] == [doc.model_dump(mode="json") for doc in body.documents]
+        assert context["product"]["application_conditions"] == product.application_conditions
+        assert context["expert_knowledge"] == knowledge
+
+
 @pytest.mark.parametrize("reverse", [False, True])
 def test_overlapping_product_descriptions_are_not_a_response_gate(reverse):
     product, body, payload = case()
@@ -795,7 +859,7 @@ def test_citation_recovery_removes_invalid_quotes_and_replaces_affected_verdicts
     assert [item.model_dump(mode="json") for item in recovered.citations] == valid_citations
     assert assessment.eligibility.status == Status.UNKNOWN
     assert payload["eligibility"]["explanation"] not in assessment.eligibility.explanation
-    assert assessment.conditions[1].model_dump(mode="json") == payload["conditions"][1]
+    assert assessment.conditions[1].model_dump(mode="json") == {**payload["conditions"][1], "assessment_basis": "EVIDENCE"}
     assert len(warnings) == 1
     assert bad_quote not in assessment.model_dump_json()
     assert bad_quote not in " ".join(warnings)

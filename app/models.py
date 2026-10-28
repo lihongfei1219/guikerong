@@ -143,6 +143,7 @@ class ConditionResult(Model):
     source_quote_verified: bool = True
     subject_id: str
     status: Status
+    assessment_basis: Literal["EVIDENCE", "PRELIMINARY_POLICY"] = "EVIDENCE"
     verification_needs: list[VerificationNeed] = Field(default_factory=list)
     reason_code: str
     explanation: str
@@ -154,6 +155,7 @@ class ConditionResult(Model):
 
 class EvaluationResult(Model):
     status: Status
+    assessment_basis: Literal["EVIDENCE", "PRELIMINARY_POLICY"] = "EVIDENCE"
     verification_needs: list[VerificationNeed] = Field(default_factory=list)
     logic_expression: str
     condition_results: list[ConditionResult]
@@ -171,6 +173,7 @@ class ModelCitation(Model):
 
 class ModelJudgement(Model):
     status: Status
+    assessment_basis: Literal["EVIDENCE", "PRELIMINARY_POLICY"] = "EVIDENCE"
     verification_needs: list[VerificationNeed] = Field(default_factory=list)
     explanation: str = Field(min_length=1)
     subject_id: str = Field(min_length=1)

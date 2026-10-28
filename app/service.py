@@ -1,4 +1,4 @@
-"""Evaluate each product in an independent coroutine using complete raw documents."""
+"""匹配执行层：逐产品独立请求，统一控制预算、并发取消、一次纠正和结果汇总。"""
 
 from __future__ import annotations
 
@@ -12,14 +12,13 @@ from uuid import uuid4
 
 from app.ark_client import ArkClient
 from app.cloud_matching import (
-    build_messages,
-    build_repair_messages,
     merge_assessment,
     recover_invalid_citations,
     validate_assessment,
 )
 from app.config import Settings
 from app.errors import DomainError
+from app.matching_context import MATCHING_PROMPT_VERSION, build_messages, build_repair_messages
 from app.models import (
     Catalog,
     EvaluationResult,
@@ -43,6 +42,7 @@ ProductResult = CloudResult | FailedProduct
 
 
 def validate_input(request: MatchRequest, settings: Settings) -> None:
+    """按文档数量、UTF-8 字节数和字符数分别校验输入，保留原文。"""
     if len(request.documents) > settings.max_documents:
         raise DomainError("INPUT_TOO_LARGE", f"最多接收 {settings.max_documents} 份 Markdown。", 413)
     sizes = [len(document.content.encode("utf-8")) for document in request.documents]
@@ -68,9 +68,10 @@ async def match_company_async(
     request_id: str | None = None,
     on_progress: Callable[[dict], None] | None = None,
     expert_knowledge: dict[str, list[dict]] | None = None,
+    continuations: dict[str, dict] | None = None,
     on_model_request: Callable[[dict], None] | None = None,
 ) -> MatchResponse:
-    """Isolate invalid product responses; cancel in-flight calls on global errors or deadline."""
+    """产品响应无效可局部失败；全局错误、超时或取消必须收回所有在途任务。"""
     settings = settings or Settings()
     settings.validate()
     validate_input(request, settings)
@@ -109,12 +110,13 @@ async def match_company_async(
                     **details,
                 })
 
-            # Preflight ALL complete prompts before making the first paid call.
-            # Preparing JSON in a thread also lets the event loop enforce the deadline.
+            # 第一笔模型请求前检查所有完整提示词，避免部分调用后才发现输入超限。
+            # JSON 组装放在线程中，事件循环才能继续执行超时和取消处理。
             def prepare_messages():
                 return {product.product_id: build_messages(
                     product, request, now.date(), max_characters=settings.ark_max_prompt_characters,
                     expert_knowledge=(expert_knowledge or {}).get(product.product_id),
+                    continuation=(continuations or {}).get(product.product_id),
                 ) for product in eligible}
 
             messages = await asyncio.to_thread(prepare_messages)
@@ -144,12 +146,12 @@ async def match_company_async(
                                 product, "queued", "校验未通过，准备一次自动纠正",
                                 reason=exc.details.get("reason"),
                             )
-                            # Correct only this product, using the same complete sources.
-                            # The repaired answer must pass every original validation.
+                            # 只纠正当前产品，保留同一份完整输入；纠正结果仍须通过全部校验。
                             repair_messages = await asyncio.to_thread(
                                 build_repair_messages, product, request, now.date(), payload, exc.details,
                                 max_characters=settings.ark_max_prompt_characters,
                                 expert_knowledge=(expert_knowledge or {}).get(product.product_id),
+                                continuation=(continuations or {}).get(product.product_id),
                             )
                             repair_attempted = True
                             if on_model_request:
@@ -212,8 +214,7 @@ async def match_company_async(
                 try:
                     results = dict(await asyncio.gather(*tasks))
                 finally:
-                    # Product-local invalid responses are values. Global failures and
-                    # caller cancellation still cancel and drain every remaining task.
+                    # 单产品无效响应转成失败结果；全局错误及调用方取消则取消并等待所有任务退出。
                     for task in tasks:
                         if not task.done():
                             task.cancel()
@@ -277,10 +278,10 @@ def _match_prepared(
         request_id=request_id or f"req_{uuid4().hex}", evaluated_at=now, company=request.company,
         status="PARTIAL" if failed else "COMPLETED",
         versions={"catalog": catalog.version, "input": "raw-documents-1.0",
-                  "assessment_scope": "application-conditions-only", "evidence_policy": "raw-citations-1.4",
+                  "assessment_scope": "application-conditions-only", "evidence_policy": "raw-citations-1.5",
                   "scoring": "equal-condition-coverage-1.0", "product_status": "three-states-two-needs-1.0",
                   "matching_mode": settings.matching_mode, "model": settings.ark_model,
-                  "prompt": "human-supplements-3.0", "response_handling": "supplement-feedback-2.0"},
+                  "prompt": MATCHING_PROMPT_VERSION, "response_handling": "supplement-feedback-2.0"},
         input_fingerprint=fingerprint,
         summary=Summary(
             catalog_total=len(catalog.products), raw_record_count=catalog.raw_record_count,
